@@ -71,15 +71,7 @@ static uint32_t psx_rgb24(uint8_t r, uint8_t g, uint8_t b)
 
 void VID_SetPalette(unsigned char * palette)
 {
-    static int haspalette = 0;
     Sys_Printf("VID_SetPalette\n");
-
-    // TODO palette gets corrupted for some reason with the second call
-    if (haspalette) {
-        return;
-    } else {
-        haspalette = 1;
-    }
 
     for (int i = 0; i < 256; ++i) {
         d_8to16table[i] = psx_rgb16(palette[i*3], palette[i*3+1], palette[i*3+2]);
