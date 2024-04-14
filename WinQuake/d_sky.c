@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // d_sky.c
 
 #include "quakedef.h"
-#include "r_local.h"
+// #include "r_local.h"
 #include "d_local.h"
 
 #define SKY_SPAN_SHIFT	5

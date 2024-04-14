@@ -17,48 +17,23 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-//
-// nonintel.c: code for non-Intel processors only
-//
+// in_null.c -- for systems without a mouse
 
 #include "quakedef.h"
-// #include "r_local.h"
-#include "d_local.h"
 
-#if	!id386
-
-/*
-================
-R_Surf8Patch
-================
-*/
-void R_Surf8Patch ()
+void IN_Init (void)
 {
-	// we only patch code on Intel
 }
 
-
-/*
-================
-R_Surf16Patch
-================
-*/
-void R_Surf16Patch ()
+void IN_Shutdown (void)
 {
-	// we only patch code on Intel
 }
 
-
-/*
-================
-R_SurfacePatch
-================
-*/
-void R_SurfacePatch (void)
+void IN_Commands (void)
 {
-	// we only patch code on Intel
 }
 
-
-#endif	// !id386
+void IN_Move (usercmd_t *cmd)
+{
+}
 

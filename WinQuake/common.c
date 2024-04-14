@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // common.c -- misc functions used in client and server
 
 #include "quakedef.h"
+#include "psxlib/psx_io.h"
 
 #define NUM_SAFE_ARGVS  7
 
@@ -1018,26 +1019,26 @@ void COM_CheckRegistered (void)
 	unsigned short  check[128];
 	int                     i;
 
-	COM_OpenFile("gfx/pop.lmp", &h);
-	static_registered = 0;
-
-	if (h == -1)
-	{
-#if WINDED
-	Sys_Error ("This dedicated server requires a full registered copy of Quake");
-#endif
-		Con_Printf ("Playing shareware version.\n");
-		if (com_modified)
-			Sys_Error ("You must have the registered version to use modified games");
-		return;
-	}
-
-	Sys_FileRead (h, check, sizeof(check));
-	COM_CloseFile (h);
-	
-	for (i=0 ; i<128 ; i++)
-		if (pop[i] != (unsigned short)BigShort (check[i]))
-			Sys_Error ("Corrupted data file.");
+// 	COM_OpenFile("gfx/pop.lmp", &h);
+// 	static_registered = 0;
+//
+// 	if (h == -1)
+// 	{
+// #if WINDED
+// 	Sys_Error ("This dedicated server requires a full registered copy of Quake");
+// #endif
+// 		Con_Printf ("Playing shareware version.\n");
+// 		if (com_modified)
+// 			Sys_Error ("You must have the registered version to use modified games");
+// 		return;
+// 	}
+//
+// 	Sys_FileRead (h, check, sizeof(check));
+// 	COM_CloseFile (h);
+//
+// 	for (i=0 ; i<128 ; i++)
+// 		if (pop[i] != (unsigned short)BigShort (check[i]))
+// 			Sys_Error ("Corrupted data file.");
 	
 	Cvar_Set ("cmdline", com_cmdline);
 	Cvar_Set ("registered", "1");
@@ -1404,6 +1405,7 @@ int COM_FindFile (char *filename, int *handle, FILE **file)
 					}
 					else
 					{       // open a new file on the pakfile
+						// TODO PSX
 						*file = fopen (pak->filename, "rb");
 						if (*file)
 							fseek (*file, pak->files[i].filepos, SEEK_SET);
@@ -1665,6 +1667,7 @@ pack_t *COM_LoadPackFile (char *packfile)
 		strcpy (newfiles[i].name, info[i].name);
 		newfiles[i].filepos = LittleLong(info[i].filepos);
 		newfiles[i].filelen = LittleLong(info[i].filelen);
+		Sys_Printf("PAK file %s, %u bytes\n", newfiles[i].name, newfiles[i].filelen);
 	}
 
 	pack = Hunk_Alloc (sizeof (pack_t));

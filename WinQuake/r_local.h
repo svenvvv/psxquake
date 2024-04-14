@@ -189,8 +189,8 @@ extern int		*pfrustum_indexes[4];
 extern int			ubasestep, errorterm, erroradjustup, erroradjustdown;
 extern int			vstartscan;
 
-extern fixed16_t	sadjust, tadjust;
-extern fixed16_t	bbextents, bbextentt;
+// extern fixed16_t	sadjust, tadjust;
+// extern fixed16_t	bbextents, bbextentt;
 
 #define MAXBVERTINDEXES	1000	// new clipped vertices when clipping bmodels
 								//  to the world BSP

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<iso_project no_xa="true">
+	<track type="data">
+		<identifiers
+			system			="PLAYSTATION"
+			volume			="QUAKE"
+			volume_set		="QUAKE"
+			publisher		="SVENVVV"
+			data_preparer	="PSN00BSDK ${PSN00BSDK_VERSION}"
+			application		="PLAYSTATION"
+			copyright		="LICENSE.TXT;1"
+		/>
+
+		<directory_tree>
+			<file name="SYSTEM.CNF"		type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/system.cnf" />
+			<file name="QUAKE.EXE"	type="data" source="quake.exe" />
+
+			<file name="PAK0.PAK"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK0.PAK" />
+			<xfile name="PAK1.PAK"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK1.PAK" />
+			<file name="CONFIG.CFG"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/CONFIG.CFG" />
+			<dir name="ID1">
+				<xfile name="CONFIG.CFG;1"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/CONFIG.CFG" />
+				<xfile name="PAK0.PAK;1"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK0.PAK" />
+			</dir>
+
+		</directory_tree>
+
+		<dummy sectors="1024"/>
+	</track>
+
+	<!--<track type="audio" source="track2.wav" />-->
+</iso_project>
