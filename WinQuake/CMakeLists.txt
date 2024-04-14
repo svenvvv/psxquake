@@ -54,7 +54,7 @@ set(COMMON_SRC
 	snd_mix.c
 	in_psx.c
 	psxlib/psx_io.c
-	psxlib/psx_math.c
+	# psxlib/psx_math.c
 	psxlib/lib.c
 	psxlib/crc16.c
 )
@@ -102,7 +102,9 @@ include_directories(BEFORE SYSTEM
 	psxlib/
 )
 
-set(QUAKE_SRC ${COMMON_SRC} ${SW_SRC})
+file(GLOB MATH_SRC psxlib/ext/*.c)
+
+set(QUAKE_SRC ${COMMON_SRC} ${SW_SRC} ${MATH_SRC})
 psn00bsdk_add_executable(quake GPREL ${QUAKE_SRC})
 psn00bsdk_add_cd_image(
 	quake_iso quake psx_cd/iso.xml
