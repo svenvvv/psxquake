@@ -51,30 +51,9 @@ static uint16_t psx_rgb16(uint8_t r, uint8_t g, uint8_t b)
 {
     uint16_t p = 0;
 
-    p |= (r & 0xF0) << 0;
-    p |= (g & 0xF0) << 4;
-    p |= (b & 0xF0) << 12;
-
-    // if(shiftmask_fl==0) shiftmask_init();
-    // p=0;
-    //
-    // if(r_shift>0) {
-    //     p=(r<<(r_shift))&r_mask;
-    // } else if(r_shift<0) {
-    //     p=(r>>(-r_shift))&r_mask;
-    // } else p|=(r&r_mask);
-    //
-    // if(g_shift>0) {
-    //     p|=(g<<(g_shift))&g_mask;
-    // } else if(g_shift<0) {
-    //     p|=(g>>(-g_shift))&g_mask;
-    // } else p|=(g&g_mask);
-    //
-    // if(b_shift>0) {
-    //     p|=(b<<(b_shift))&b_mask;
-    // } else if(b_shift<0) {
-    //     p|=(b>>(-b_shift))&b_mask;
-    // } else p|=(b&b_mask);
+    p |= (r >> 3) << 0;
+    p |= (g >> 3) << 5;
+    p |= (b >> 3) << 10;
 
     return p;
 }
@@ -83,16 +62,24 @@ static uint32_t psx_rgb24(uint8_t r, uint8_t g, uint8_t b)
 {
     uint32_t ret = 0;
 
-    ret |= r << 24;
+    ret |= r << 0;
     ret |= g << 16;
-    ret |= b << 8;
+    ret |= b << 24;
 
     return ret;
 }
 
 void VID_SetPalette(unsigned char * palette)
 {
+    static int haspalette = 0;
     Sys_Printf("VID_SetPalette\n");
+
+    // TODO palette gets corrupted for some reason with the second call
+    if (haspalette) {
+        return;
+    } else {
+        haspalette = 1;
+    }
 
     for (int i = 0; i < 256; ++i) {
         d_8to16table[i] = psx_rgb16(palette[i*3], palette[i*3+1], palette[i*3+2]);
