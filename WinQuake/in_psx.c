@@ -56,6 +56,9 @@ void IN_Commands(void)
             Key_Event (K_LEFTARROW, !(pad->btn & PAD_LEFT));
             Key_Event (K_RIGHTARROW, !(pad->btn & PAD_RIGHT));
             Key_Event (K_ENTER, !(pad->btn & PAD_CROSS));
+            Key_Event (K_MOUSE1, !(pad->btn & PAD_CIRCLE));
+            Key_Event (K_MOUSE2, !(pad->btn & PAD_SQUARE));
+            Key_Event (K_MOUSE3, !(pad->btn & PAD_TRIANGLE));
 
             Key_Event (K_ESCAPE, !(pad->btn & PAD_START));
         }
@@ -64,6 +67,28 @@ void IN_Commands(void)
 
 void IN_Move(usercmd_t * cmd)
 {
-    printf("IN_Move TODO\n");
+    return;
+	float	speed, aspeed;
+
+	if (in_speed.state & 1)
+		speed = cl_movespeedkey.value;
+	else
+		speed = 1;
+	aspeed = speed*host_frametime;
+
+    PADTYPE * pad = (PADTYPE *)padbuf[0];
+
+    if (pad->stat == 0) {
+        if ((pad->type == PAD_ID_DIGITAL) || (pad->type == PAD_ID_ANALOG_STICK) || (pad->type == PAD_ID_ANALOG)) {
+            if (!(pad->btn & PAD_LEFT))
+                cmd->sidemove -= speed*cl_sidespeed.value;
+            if (!(pad->btn & PAD_RIGHT))
+                cmd->sidemove += speed*cl_sidespeed.value;
+            if (!(pad->btn & PAD_UP))
+                cmd->forwardmove += speed*cl_forwardspeed.value;
+            if (!(pad->btn & PAD_DOWN))
+                cmd->forwardmove -= speed*cl_backspeed.value;
+        }
+    }
 }
 
