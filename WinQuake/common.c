@@ -20,7 +20,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // common.c -- misc functions used in client and server
 
 #include "quakedef.h"
+#ifdef PSX
 #include "psxlib/psx_io.h"
+#endif
 
 #define NUM_SAFE_ARGVS  7
 
