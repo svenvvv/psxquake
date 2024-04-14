@@ -3,8 +3,13 @@
 
 #include <stdlib.h>
 #include <psxapi.h>
+#include <psxcd.h>
 
-#define strerror(e) ""
+#define strerror(e) "[!strerr!]"
+
+#define ARRAY_SIZE(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
+uint16_t crc16(uint16_t crc, uint8_t const *buffer, size_t len);
 
 typedef int FILE;
 

@@ -56,6 +56,7 @@ set(COMMON_SRC
 	psxlib/psx_io.c
 	psxlib/psx_math.c
 	psxlib/lib.c
+	psxlib/crc16.c
 )
 
 set(SW_SRC

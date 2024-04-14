@@ -11,8 +11,7 @@
 #include <psxgpu.h>
 #include <psxapi.h>
 #include <psxcd.h>
-
-#define ARRAY_SIZE(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+#include "psxlib/internal.h"
 
 #define SCREEN_XRES	320
 #define SCREEN_YRES	240
@@ -122,19 +121,24 @@ void Sys_mkdir(char * path)
     // mkdir(path, 0777);
 }
 
-#define PSX_CD_FILES_MAX 4
+struct PQCdFile pq_cd_files[PSX_CD_FILES_MAX] = { 0 };
 
-struct PQCdFile
+struct PQCdFile * pq_cd_file_alloc(void)
 {
-	int allocated;
-	// Current read cursor, in CD-drive sectors
-	size_t cursor_sectors;
-	// Current read cursor offset, in bytes
-	size_t cursor_bytes;
-	CdlFILE file;
-};
-
-static struct PQCdFile cd_files[PSX_CD_FILES_MAX] = { 0 };
+	struct PQCdFile * ret = NULL;
+	EnterCriticalSection();
+	for (int i = 0; i < ARRAY_SIZE(pq_cd_files); ++i) {
+		if (pq_cd_files[i].allocated) {
+			continue;
+		}
+		ret = &pq_cd_files[i];
+		memset(ret, 0, sizeof(*ret));
+		ret->allocated = true;
+		break;
+	}
+	ExitCriticalSection();
+	return ret;
+}
 
 int Sys_FileOpenRead(char * path, int * handle)
 {
@@ -158,17 +162,7 @@ int Sys_FileOpenRead(char * path, int * handle)
 	}
 	pathbuf[pathbuf_len++] = 0;
 
-	EnterCriticalSection();
-	for (int i = 0; i < ARRAY_SIZE(cd_files); ++i) {
-		if (cd_files[i].allocated) {
-			continue;
-		}
-		f = &cd_files[i];
-		memset(f, 0, sizeof(f));
-		f->allocated = true;
-		break;
-	}
-	ExitCriticalSection();
+	f = pq_cd_file_alloc();
 	if (f == NULL) {
 		Sys_Error("All out of CD file handles..");
 		goto error;
@@ -182,6 +176,7 @@ int Sys_FileOpenRead(char * path, int * handle)
 		goto error;
 	}
 
+	f->filename_hash = crc16(0, path, strlen(path));
 	*handle = (int)f;
 	return f->file.size;
 error:
@@ -212,16 +207,16 @@ int Sys_FileWrite(int handle, void * src, int count)
 	return 0;
 }
 
-static int is_valid_pqcdfile(struct PQCdFile const * f)
+int pq_cd_file_is_valid(struct PQCdFile const * f)
 {
-	return cd_files <= f || f < &cd_files[ARRAY_SIZE(cd_files)];
+	return pq_cd_files <= f || f < &pq_cd_files[ARRAY_SIZE(pq_cd_files)];
 }
 
 void Sys_FileClose(int handle)
 {
 	struct PQCdFile * f = (void*)handle;
 
-	if (!is_valid_pqcdfile(f)) {
+	if (!pq_cd_file_is_valid(f)) {
 		Sys_Warn("Invalid file handle access");
 		return;
 	}
@@ -231,7 +226,6 @@ void Sys_FileClose(int handle)
 	f->allocated = false;
 }
 
-#define PSX_CD_SECTOR_SIZE 2048
 #define CD_FILE_SIZE_ROUND(sz) ((sz + 2047U) & 0xfffff800)
 
 void Sys_FileSeek(int handle, int position)
@@ -240,41 +234,61 @@ void Sys_FileSeek(int handle, int position)
 
 	printf("Sys_FileSeek 0x%p %u\n", f, position);
 
-	if (!is_valid_pqcdfile(f)) {
+	if (!pq_cd_file_is_valid(f)) {
 		Sys_Warn("Invalid file handle access");
 		return;
 	}
 
 	f->cursor_sectors = position / PSX_CD_SECTOR_SIZE;
 	f->cursor_bytes = position % PSX_CD_SECTOR_SIZE;
+	f->read_buf_is_valid = 0;
 
 	printf("Seek %u, sec %u bytes %u, file len %u\n", position, f->cursor_sectors, f->cursor_bytes, f->file.size);
 }
 
-static uint8_t cd_read_buf[PSX_CD_SECTOR_SIZE];
+int pq_cd_file_fill_read_buf(struct PQCdFile * f)
+{
+	CdlLOC loc;
+
+	int position = CdPosToInt(&f->file.pos) + f->cursor_sectors;
+	CdIntToPos(position, &loc);
+	CdControl(CdlSetloc, &loc, 0);
+
+	CdRead(1, (void*)f->read_buf, CdlModeSpeed);
+	if (CdReadSync(0, 0) < 0) {
+		Sys_Error("Failed to read from CD drive");
+	}
+	f->read_buf_is_valid = true;
+
+	return 0;
+}
 
 int Sys_FileRead(int handle, void * dest, int count)
 {
-	CdlLOC loc;
 	size_t copied = 0;
 	struct PQCdFile * f = (void*)handle;
 
-	printf("Sys_FileRead 0x%p %u\n", f, count);
-
-	if (!is_valid_pqcdfile(f)) {
+	if (!pq_cd_file_is_valid(f)) {
 		Sys_Warn("Invalid file handle access");
 		return 0;
 	}
 
-	while (copied < count) {
-		int position = CdPosToInt(&f->file.pos) + f->cursor_sectors;
-		CdIntToPos(position, &loc);
-		CdControl(CdlSetloc, &loc, 0);
-
-		CdRead(1, (void*)cd_read_buf, CdlModeSpeed);
-		if (CdReadSync(0, 0) < 0) {
-			Sys_Error("Failed to read from CD drive");
+	// TODO we do a double-read for the first partial chunk if this condition is false
+	if (f->read_buf_is_valid && f->cursor_bytes + count < sizeof(f->read_buf)) {
+		printf("Sys_FileRead buffered 0x%p %u\n", f, count);
+		memcpy(dest, f->read_buf + f->cursor_bytes, count);
+		f->cursor_bytes += count;
+		if (f->cursor_bytes >= PSX_CD_SECTOR_SIZE) {
+			f->cursor_sectors += 1;
+			f->cursor_bytes -= PSX_CD_SECTOR_SIZE;
+			f->read_buf_is_valid = false;
 		}
+		return count;
+	}
+
+	printf("Sys_FileRead drive 0x%p %u\n", f, count);
+	while (copied < count) {
+		pq_cd_file_fill_read_buf(f);
 
 		// printf("read cursor %u %u sizes %u %u\n",
 		// 	   f->cursor_sectors, f->cursor_bytes, copied, count);
@@ -283,7 +297,7 @@ int Sys_FileRead(int handle, void * dest, int count)
 		if ((copied + copy_len) > count) {
 			copy_len = count - copied;
 		}
-		memcpy(dest + copied, cd_read_buf + f->cursor_bytes, copy_len);
+		memcpy(dest + copied, f->read_buf + f->cursor_bytes, copy_len);
 
 		copied += copy_len;
 
@@ -291,25 +305,13 @@ int Sys_FileRead(int handle, void * dest, int count)
 		if (f->cursor_bytes >= PSX_CD_SECTOR_SIZE) {
 			f->cursor_sectors += 1;
 			f->cursor_bytes -= PSX_CD_SECTOR_SIZE;
+			f->read_buf_is_valid = false;
 		}
-
-		// size_t copy_len = PSX_CD_SECTOR_SIZE;
-		// if (copy_len > count) {
-		// 	copy_len = count;
-		// }
-		// memcpy(dest, cd_read_buf + f->cursor_bytes, copy_len);
-  //
-		// f->cursor_bytes += copy_len;
-		// if (f->cursor_bytes >= PSX_CD_SECTOR_SIZE) {
-		// 	f->cursor_sectors += 1;
-		// 	f->cursor_bytes -= PSX_CD_SECTOR_SIZE;
-		// }
-		// read += sizeof(cd_read_buf);
 	}
 
 	printf("post read cursor %u %u\n", f->cursor_sectors, f->cursor_bytes);
 
-	return 0;
+	return copied;
 }
 
 void Sys_DebugLog(char * file, char * fmt, ...)

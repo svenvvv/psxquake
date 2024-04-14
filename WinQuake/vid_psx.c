@@ -83,30 +83,9 @@ void VID_SetPalette(unsigned char * palette)
 
     for (int i = 0; i < 256; ++i) {
         d_8to16table[i] = psx_rgb16(palette[i*3], palette[i*3+1], palette[i*3+2]);
-        d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
+        // TODO PSX unused for now
+        // d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
     }
-	// int i;
-	// XColor colors[256];
- //
-	// for(i=0;i<256;i++) {
-	// 	st2d_8to16table[i]= xlib_rgb16(palette[i*3], palette[i*3+1],palette[i*3+2]);
-	// 	st2d_8to24table[i]= xlib_rgb24(palette[i*3], palette[i*3+1],palette[i*3+2]);
-	// }
- //
-	// if (x_visinfo->class == PseudoColor && x_visinfo->depth == 8)
-	// {
-	// 	if (palette != current_palette)
-	// 		memcpy(current_palette, palette, 768);
-	// 	for (i=0 ; i<256 ; i++)
-	// 	{
-	// 		colors[i].pixel = i;
-	// 		colors[i].flags = DoRed|DoGreen|DoBlue;
-	// 		colors[i].red = palette[i*3] * 257;
-	// 		colors[i].green = palette[i*3+1] * 257;
-	// 		colors[i].blue = palette[i*3+2] * 257;
-	// 	}
-	// 	XStoreColors(x_disp, x_cmap, colors, 256);
-	// }
 }
 
 void VID_ShiftPalette(unsigned char * palette)
