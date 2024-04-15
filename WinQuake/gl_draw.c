@@ -65,7 +65,7 @@ typedef struct
 	qboolean	mipmap;
 } gltexture_t;
 
-#define	MAX_GLTEXTURES	1024
+#define	MAX_GLTEXTURES	128 // 1024 TODO PSX out of memory
 gltexture_t	gltextures[MAX_GLTEXTURES];
 int			numgltextures;
 
@@ -634,9 +634,9 @@ Draw_TransPic
 */
 void Draw_TransPic (int x, int y, qpic_t *pic)
 {
-	byte	*dest, *source, tbyte;
-	unsigned short	*pusdest;
-	int				v, u;
+	// byte	*dest, *source, tbyte;
+	// unsigned short	*pusdest;
+	// int				v, u;
 
 	if (x < 0 || (unsigned)(x + pic->width) > vid.width || y < 0 ||
 		 (unsigned)(y + pic->height) > vid.height)
@@ -1003,8 +1003,10 @@ GL_Upload32
 */
 void GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap, qboolean alpha)
 {
+	return;
 	int			samples;
-static	unsigned	scaled[1024*512];	// [512*256];
+// static	unsigned	scaled[1024*512];	// [512*256];
+	unsigned scaled[2]; // TODO PSX out of memory
 	int			scaled_width, scaled_height;
 
 	for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
@@ -1184,7 +1186,9 @@ GL_Upload8
 */
 void GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean alpha)
 {
-static	unsigned	trans[640*480];		// FIXME, temporary
+	return;
+// static	unsigned	trans[640*480];		// FIXME, temporary
+	unsigned trans[8]; // TODO PSX out of memory
 	int			i, s;
 	qboolean	noalpha;
 	int			p;

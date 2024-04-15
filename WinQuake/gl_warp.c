@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern	model_t	*loadmodel;
 
-int		skytexturenum;
+extern int		skytexturenum;
 
 int		solidskytexture;
 int		alphaskytexture;

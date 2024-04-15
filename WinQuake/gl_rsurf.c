@@ -34,10 +34,10 @@ int		lightmap_textures;
 
 unsigned		blocklights[18*18];
 
-#define	BLOCK_WIDTH		128
-#define	BLOCK_HEIGHT	128
+#define	BLOCK_WIDTH		64 // 128 TODO PSX out of memory
+#define	BLOCK_HEIGHT	64 // 128 TODO PSX out of memory
 
-#define	MAX_LIGHTMAPS	64
+#define	MAX_LIGHTMAPS	1 // 64 TODO PSX out of memory
 int			active_lightmaps;
 
 typedef struct glRect_s {
@@ -135,8 +135,9 @@ R_BuildLightMap
 Combine and scale multiple lightmaps into the 8.8 format in blocklights
 ===============
 */
-void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
+static void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 {
+	return; // TODO PSX
 	int			smax, tmax;
 	int			t;
 	int			i, j, size;

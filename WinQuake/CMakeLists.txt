@@ -52,15 +52,16 @@ set(COMMON_SRC
 	# snd_dma.c
 	snd_mem.c
 	snd_mix.c
+)
+
+set(SW_SRC
 	in_psx.c
 	psxlib/psx_io.c
 	# psxlib/psx_math.c
 	psxlib/lib.c
 	psxlib/crc16.c
-)
-
-set(SW_SRC
 	vid_psx.c
+
 	draw.c
 	model.c
 	r_efrag.c
@@ -93,6 +94,28 @@ set(SW_SRC
 	# snd_linux.c
 )
 
+set(GL_SRC
+	in_psx.c
+	psxlib/psx_io.c
+	# psxlib/psx_math.c
+	psxlib/lib.c
+	psxlib/crc16.c
+	psxlib/gl.c
+	sys_psx.c
+	gl_vidpsx.c
+
+	gl_draw.c
+	gl_mesh.c
+	gl_model.c
+	gl_refrag.c
+	gl_rlight.c
+	gl_rmain.c
+	gl_rmisc.c
+	gl_rsurf.c
+	gl_screen.c
+	gl_warp.c
+)
+
 add_definitions(
 	-DPSX
 	-Os
@@ -104,12 +127,16 @@ include_directories(BEFORE SYSTEM
 
 file(GLOB MATH_SRC psxlib/ext/*.c)
 
-set(QUAKE_SRC ${COMMON_SRC} ${SW_SRC} ${MATH_SRC})
-psn00bsdk_add_executable(quake GPREL ${QUAKE_SRC})
+set(SWQUAKE_SRC ${COMMON_SRC} ${SW_SRC} ${MATH_SRC})
+psn00bsdk_add_executable(swquake GPREL ${SWQUAKE_SRC})
+
 psn00bsdk_add_cd_image(
-	quake_iso quake psx_cd/iso.xml
-	DEPENDS quake psx_cd/system.cnf psx_cd/iso.xml
+	quake_iso swquake psx_cd/iso.xml
+	DEPENDS swquake psx_cd/system.cnf psx_cd/iso.xml
 )
-# psn00bsdk_target_incbin(quake PRIVATE balls psx_cd/ID0/config.cfg)
+
+set(GLQUAKE_SRC ${COMMON_SRC} ${GL_SRC} ${MATH_SRC})
+psn00bsdk_add_executable(glquake GPREL ${GLQUAKE_SRC})
+target_compile_definitions(glquake PRIVATE -DGLQUAKE)
 
 install(FILES ${PROJECT_BINARY_DIR}/quake.exe TYPE BIN)
