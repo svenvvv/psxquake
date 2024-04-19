@@ -7,26 +7,69 @@
 
 static char const * const pak_filename = "./id1/pak0.pak";
 
-FILE * fopen (const char * filename, const char * mode)
-{
-    size_t filename_len = strlen(filename);
-    printf("fopen %s %s\n", filename, mode);
+static struct PQMcFile mc_files[PSX_MEMCARD_FILES_MAX] = { 0 };
 
-    uint16_t search_hash = crc16(0, filename, filename_len);
+struct PQMcFile * pq_mc_file_alloc(void)
+{
+    EnterCriticalSection();
+    for (int i = 0; i < ARRAY_SIZE(mc_files); ++i) {
+        if (!mc_files[i].allocated) {
+            memset(&mc_files[i], 0, sizeof(*mc_files));
+            mc_files[i].allocated = 1;
+            ExitCriticalSection();
+            return &mc_files[i];
+        }
+    }
+    ExitCriticalSection();
+    return NULL;
+}
+
+static FILE * fopen_mc_file(uint16_t filename_hash)
+{
+    // Quake uses fopen to get a second file handle for pak files
     for (int i = 0; i < ARRAY_SIZE(pq_cd_files); ++i) {
         struct PQCdFile * f = &pq_cd_files[i];
-        if (f->allocated && f->filename_hash == search_hash) {
-            if (strchr(mode, 'w')) {
-                // Can't write to CD
-                return 0;
-            }
-
+        if (f->allocated && f->filename_hash == filename_hash) {
             struct PQCdFile * ret = pq_cd_file_alloc();
             memcpy(ret, f, sizeof(*f));
             return (void*)ret;
         }
     }
+    printf("TODO fopen_cd_file unknown file\n");
+    return 0;
+}
 
+static FILE * fopen_cd_file(uint16_t filename_hash)
+{
+    // Quake uses fopen to get a second file handle for pak files
+    for (int i = 0; i < ARRAY_SIZE(pq_cd_files); ++i) {
+        struct PQCdFile * f = &pq_cd_files[i];
+        if (f->allocated && f->filename_hash == filename_hash) {
+            // If we have the file already open then allocate a new handle and copy the contents
+            struct PQCdFile * ret = pq_cd_file_alloc();
+            memcpy(ret, f, sizeof(*f));
+            f->cursor_sectors = 0;
+            f->cursor_bytes = 0;
+            return (void*)ret;
+        }
+    }
+    printf("TODO fopen_cd_file unknown file\n");
+    return 0;
+}
+
+FILE * fopen (const char * filename, const char * mode)
+{
+    size_t filename_len = strlen(filename);
+    uint16_t search_hash = crc16(0, filename, filename_len);
+    printf("fopen %s %s\n", filename, mode);
+
+    if (strchr(mode, 'r')) {
+        return fopen_cd_file(search_hash);
+    } else if (strchr(mode, 'w')) {
+        // return fopen_mc_file(search_hash);
+    }
+
+    printf("Unsupported mode in fopen: %s\n", mode);
     return 0;
 }
 

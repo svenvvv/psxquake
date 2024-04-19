@@ -22,7 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <windows.h>
 #endif
 
+#ifdef PSX
 #include "psxlib/gl.h"
+#include "psxlib/psx_gl.h"
+#ifdef GLQUAKE
+#include <psxgpu.h>
+#endif
+#endif
 
 void GL_BeginRendering (int *x, int *y, int *width, int *height);
 void GL_EndRendering (void);

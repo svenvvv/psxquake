@@ -34,10 +34,10 @@ int		lightmap_textures;
 
 unsigned		blocklights[18*18];
 
-#define	BLOCK_WIDTH		64 // 128 TODO PSX out of memory
-#define	BLOCK_HEIGHT	64 // 128 TODO PSX out of memory
+#define	BLOCK_WIDTH		128 // 128 TODO PSX out of memory
+#define	BLOCK_HEIGHT	128 // 128 TODO PSX out of memory
 
-#define	MAX_LIGHTMAPS	1 // 64 TODO PSX out of memory
+#define	MAX_LIGHTMAPS	8 // 64 TODO PSX out of memory
 int			active_lightmaps;
 
 typedef struct glRect_s {
@@ -1436,7 +1436,8 @@ int AllocBlock (int w, int h, int *x, int *y)
 		return texnum;
 	}
 
-	Sys_Error ("AllocBlock: full");
+	Sys_Warn ("AllocBlock: full"); // TODO PSX out of memory
+	return 0;
 }
 
 

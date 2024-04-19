@@ -13,7 +13,7 @@
 
 		<directory_tree>
 			<file name="SYSTEM.CNF"		type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/system.cnf" />
-			<file name="QUAKE.EXE"	type="data" source="quake.exe" />
+			<file name="QUAKE.EXE"	type="data" source="glquake.exe" />
 
 			<file name="PAK0.PAK"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK0.PAK" />
 			<xfile name="PAK1.PAK"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK1.PAK" />
@@ -22,7 +22,6 @@
 				<xfile name="CONFIG.CFG;1"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/CONFIG.CFG" />
 				<xfile name="PAK0.PAK;1"	type="data" source="${PROJECT_SOURCE_DIR}/psx_cd/ID1/PAK0.PAK" />
 			</dir>
-
 		</directory_tree>
 
 		<dummy sectors="1024"/>

@@ -100,6 +100,7 @@ set(GL_SRC
 	# psxlib/psx_math.c
 	psxlib/lib.c
 	psxlib/crc16.c
+	psxlib/crc32.c
 	psxlib/gl.c
 	sys_psx.c
 	gl_vidpsx.c
@@ -129,14 +130,15 @@ file(GLOB MATH_SRC psxlib/ext/*.c)
 
 set(SWQUAKE_SRC ${COMMON_SRC} ${SW_SRC} ${MATH_SRC})
 psn00bsdk_add_executable(swquake GPREL ${SWQUAKE_SRC})
-
-psn00bsdk_add_cd_image(
-	quake_iso swquake psx_cd/iso.xml
-	DEPENDS swquake psx_cd/system.cnf psx_cd/iso.xml
-)
+# install(FILES ${PROJECT_BINARY_DIR}/swquake.exe TYPE BIN)
 
 set(GLQUAKE_SRC ${COMMON_SRC} ${GL_SRC} ${MATH_SRC})
 psn00bsdk_add_executable(glquake GPREL ${GLQUAKE_SRC})
 target_compile_definitions(glquake PRIVATE -DGLQUAKE)
+# install(FILES ${PROJECT_BINARY_DIR}/glquake.exe TYPE BIN)
 
-install(FILES ${PROJECT_BINARY_DIR}/quake.exe TYPE BIN)
+psn00bsdk_add_cd_image(
+	quake_iso quake psx_cd/iso.xml
+	DEPENDS glquake swquake psx_cd/system.cnf psx_cd/iso.xml
+)
+

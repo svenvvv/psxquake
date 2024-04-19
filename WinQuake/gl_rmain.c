@@ -971,7 +971,6 @@ void R_RenderScene (void)
 #ifdef GLTEST
 	Test_Draw ();
 #endif
-
 }
 
 

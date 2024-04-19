@@ -1,6 +1,10 @@
 #include "gl.h"
 
-void glClear( GLbitfield mask )
+#include <stdio.h>
+#include <psxgte.h>
+#include <inline_c.h>
+
+void glClear(GLbitfield mask)
 {
 
 }
@@ -31,17 +35,44 @@ void glDisable( GLenum cap )
 
 void glBegin(void)
 {
-
+    // printf("glBegin\n");
 }
 
 void glEnd(void)
 {
-
+    // printf("glEnd\n");
 }
 
 void glVertex3f( GLfloat x, GLfloat y, GLfloat z )
 {
-
+    // static int reg = 0;
+    // SVECTOR vec = { x, y, z };
+    //
+    // switch (reg) {
+    //     case 0:
+    //         gte_ldv0(vec);
+    //         break;
+    //     case 1:
+    //         gte_ldv1(vec);
+    //         break;
+    //     case 2:
+    //         gte_ldv2(vec);
+    //         break;
+    // }
+    //
+    // reg += 1;
+    // if (reg == 3) {
+    //     /* Rotation, Translation and Perspective Triple */
+    //     gte_rtpt();
+    //
+    //     /* Compute normal clip for backface culling */
+    //     gte_nclip();
+    //
+    //     /* Get result*/
+    //     gte_stopz( &p );
+    //
+    //     reg = 0;
+    // }
 }
 
 void glTexCoord2f( GLfloat s, GLfloat t )
@@ -51,12 +82,12 @@ void glTexCoord2f( GLfloat s, GLfloat t )
 
 void glVertex2f( GLfloat x, GLfloat y )
 {
-
+    // printf("glVertex2f\n");
 }
 
 void glVertex3fv( const GLfloat *v )
 {
-
+    // printf("glVertex3fv\n");
 }
 
 void glColor3f( GLfloat red, GLfloat green, GLfloat blue )

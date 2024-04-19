@@ -10,6 +10,11 @@
 #define ARRAY_SIZE(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 uint16_t crc16(uint16_t crc, uint8_t const *buffer, size_t len);
+unsigned int xcrc32 (const unsigned char *buf, int len, unsigned int init);
+static inline unsigned int crc32 (const unsigned char *buf, int len)
+{
+    return xcrc32(buf, len, UINT32_MAX);
+}
 
 typedef int FILE;
 

@@ -34,7 +34,7 @@ model_t *Mod_LoadModel (model_t *mod, qboolean crash);
 
 byte	mod_novis[MAX_MAP_LEAFS/8];
 
-#define	MAX_MOD_KNOWN	32 // TODO PSX out of memory
+#define	MAX_MOD_KNOWN	512 // TODO PSX out of memory
 model_t	mod_known[MAX_MOD_KNOWN];
 int		mod_numknown;
 
