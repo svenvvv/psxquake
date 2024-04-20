@@ -1172,7 +1172,7 @@ FIXME: make this buffer size safe someday
 char    *va(char *format, ...)
 {
 	va_list         argptr;
-	static char             string[1024];
+	static char             string[1024]; // TODO PSX refactor into shared buf
 	
 	va_start (argptr, format);
 	vsprintf (string, format,argptr);

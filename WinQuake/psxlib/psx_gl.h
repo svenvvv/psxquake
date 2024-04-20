@@ -11,7 +11,7 @@
 
 #define VRAM_WIDTH 1024
 #define VRAM_HEIGHT 512
-#define VRAM_PAGE_WIDTH 256
+#define VRAM_PAGE_WIDTH 128
 #define VRAM_PAGE_HEIGHT 256
 #define VRAM_PAGES ((VRAM_WIDTH / VRAM_PAGE_WIDTH) * (VRAM_HEIGHT / VRAM_PAGE_HEIGHT))
 
@@ -44,6 +44,7 @@ struct vram_texture
     struct vram_texpage * page;
     bool alpha;
 	uint16_t tpage;
+    bool permanent;
 };
 
 extern uint8_t * rb_nextpri;

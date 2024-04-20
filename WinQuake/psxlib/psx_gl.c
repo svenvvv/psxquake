@@ -53,7 +53,7 @@ void psx_rb_init(void)
 
 void psx_rb_present(void)
 {
-    printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
+    // printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
     pricount = 0;
 
     if (rb_nextpri >= rb[psx_db].pribuf + sizeof(rb->pribuf)) {

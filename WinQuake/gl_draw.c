@@ -516,19 +516,6 @@ void Draw_Character (int x, int y, int num)
 
 	psx_add_prim(tp, psx_zlevel - 1);
 	rb_nextpri = (void*)++tp;
-
-	// POLY_FT4 * poly = (void*)rb_nextpri;
- //
-	// setPolyFT4(poly);
-	// setXYWH(poly, x, y, 8, 8);
-	// setUVWH(poly, col * 8, row * 8, 8, 8);
-	// setRGB0(poly, 128, 128, 128);
-	// poly->clut = psx_clut_transparent;
-	// poly->tpage = tex->tpage;
- //
-	// psx_add_prim(poly, psx_zlevel++);
-	// poly++;
-	// rb_nextpri = (void*)poly;
 }
 
 /*
@@ -566,13 +553,19 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 
 	// TODO PSX split into multiple textures
 
-	// printf("DrawPic %ix%i %ix%i %ix%i\n", x, y, pic->width, pic->height, tex->rect.w, tex->rect.h);
+	// printf("DrawPic %ix%i %ix%i %i;%i %ix%i\n", x, y, pic->width, pic->height,
+	// 	   tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h);
 
 	POLY_FT4 * poly = (void*)rb_nextpri;
 
 	setPolyFT4(poly);
 	setXYWH(poly, x, y, pic->width, pic->height);
-	setUVWH(poly, tex->rect.x, tex->rect.y, tex->rect.w - 1, tex->rect.h - 1);
+	setUVWH(poly,
+		tex->rect.x * 2,
+		tex->rect.y,
+		tex->rect.w - 1,
+		tex->rect.h - 1
+	);
 	setRGB0(poly, 128, 128, 128);
 	poly->clut = tex->alpha ? psx_clut_transparent : psx_clut;
 	poly->tpage = tex->tpage;
@@ -1128,7 +1121,7 @@ GL_LoadTexture
 */
 int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha)
 {
-	static uint8_t scaled[VRAM_PAGE_WIDTH * VRAM_PAGE_HEIGHT];
+	static uint8_t scaled[2 * VRAM_PAGE_WIDTH * VRAM_PAGE_HEIGHT];
 	int div = 1;
 	struct vram_texture * tex;
 
@@ -1142,7 +1135,7 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 		return tex->index;
 	}
 
-	if (width > VRAM_PAGE_WIDTH || height > VRAM_PAGE_HEIGHT) {
+	if (width > 2 * VRAM_PAGE_WIDTH || height > VRAM_PAGE_HEIGHT) {
 		int divw = (width + (VRAM_PAGE_WIDTH - 1)) / VRAM_PAGE_WIDTH;
 		int divh = (width + (VRAM_PAGE_HEIGHT - 1)) / VRAM_PAGE_HEIGHT;
 		div = divw > divh ? divw : divh;
@@ -1187,6 +1180,13 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	LoadImage(&load_rect, (void*)data);
 	tex->div = div;
 	tex->alpha = alpha;
+
+	if (tex->rect.w == 256) {
+		tex->rect.w -= 1;
+	}
+	if (tex->rect.h == 256) {
+		tex->rect.h -= 1;
+	}
 
 	return tex->index;
 }

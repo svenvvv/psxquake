@@ -107,7 +107,6 @@ void	VID_SetPalette (unsigned char *palette)
 		uint8_t g = palette[i*3+1];
 		uint8_t b = palette[i*3+2];
         d_8to16table[i] = psx_rgb16(r, g, b, 1);
-        // d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
     }
 	LoadImage(&psx_clut_rect, (uint32_t*) d_8to16table);
 	psx_clut = getClut(psx_clut_rect.x, psx_clut_rect.y);
@@ -172,8 +171,6 @@ qboolean VID_Is8bit(void)
 
 void VID_Init(unsigned char *palette)
 {
-	psx_vram_init();
-
 	Cvar_RegisterVariable (&vid_mode);
 	Cvar_RegisterVariable (&vid_redrawfull);
 	Cvar_RegisterVariable (&vid_waitforrefresh);
@@ -184,7 +181,7 @@ void VID_Init(unsigned char *palette)
 	vid.colormap = host_colormap;
 	vid.fullbright = 256 - LittleLong (*((int *)vid.colormap + 2048));
 
-	vid.conwidth = VRAM_PAGE_WIDTH;
+	vid.conwidth = VRAM_PAGE_WIDTH * 2;
 	vid.conheight = VRAM_PAGE_HEIGHT; //vid.conwidth*3 / 4;
 
 	// pick a conheight that matches with correct aspect
@@ -197,8 +194,7 @@ void VID_Init(unsigned char *palette)
 	// vid.width = vid.conwidth;
 	// vid.height = vid.conheight;
 
-	vid.aspect = ((float)vid.height / (float)vid.width) *
-				(320.0 / 240.0);
+	vid.aspect = ((float)vid.height / (float)vid.width) * (320.0f / 240.0f);
 	vid.numpages = 2;
 
 	GL_Init();
@@ -208,20 +204,21 @@ void VID_Init(unsigned char *palette)
 
 	vid.recalc_refdef = 1;				// force a surface cache flush
 
+	psx_vram_init();
+
 	// Clear VRAM for debugging
-	GL_BeginRendering(0, 0, 0, 0);
-	for (int y = 0; y < VRAM_HEIGHT; y += 256) {
-		for (int x = 0; x < VRAM_WIDTH; x += 256) {
-			FILL * fill = (FILL*)rb_nextpri;
-			setFill(fill);
-			setXY0(fill, x, y);
-			setWH(fill, 256, 256);
-			setRGB0(fill, 0, 0xFF, 0);
-			psx_add_prim(fill, 0);
-			rb_nextpri = (void*)++fill;
-		}
-	}
-	GL_EndRendering();
+	// for (int y = 0; y < VRAM_HEIGHT; y += 256) {
+	// 	for (int x = 0; x < VRAM_WIDTH; x += 256) {
+	// 		FILL * fill = (FILL*)rb_nextpri;
+	// 		setFill(fill);
+	// 		setXY0(fill, x, y);
+	// 		setWH(fill, 256, 256);
+	// 		setRGB0(fill, 0, 0xFF, 0);
+	// 		psx_add_prim(fill, 0);
+	// 		rb_nextpri = (void*)++fill;
+	// 	}
+	// }
+	// psx_rb_present();
 }
 
 void Sys_SendKeyEvents(void)

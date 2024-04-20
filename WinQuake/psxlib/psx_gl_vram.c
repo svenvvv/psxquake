@@ -1,6 +1,8 @@
 #include "psx_gl.h"
 #include "psx_io.h"
 #include <stdio.h>
+#include <string.h>
+#include "../sys.h"
 
 static struct vram_texture vram_textures[PSX_MAX_VRAM_RECTS];
 static size_t vram_textures_count = 0;
@@ -56,10 +58,8 @@ struct vram_texture * psx_vram_find (char * ident, int w, int h)
 	return NULL;
 }
 
-void psx_vram_rect(int x, int y, int w, int h)
+static void psx_vram_rect(int x, int y, int w, int h)
 {
-	return;
-	GL_BeginRendering(0, 0, 0, 0);
 	FILL * fill = (FILL*)rb_nextpri;
 	setFill(fill);
 	setXY0(fill, x, y);
@@ -67,7 +67,8 @@ void psx_vram_rect(int x, int y, int w, int h)
 	setRGB0(fill, rand() % 0xFF, rand() % 0xFF, rand() % 0xFF);
 	psx_add_prim(fill, 0);
 	rb_nextpri = (void*)++fill;
-	GL_EndRendering();
+
+	psx_rb_present();
 }
 
 void psx_vram_compact(struct vram_texpage * page)
@@ -77,7 +78,7 @@ void psx_vram_compact(struct vram_texpage * page)
 
 	for (int t = 0; t < page->textures_count; ++t) {
 		struct vram_texture * tex = page->textures[t];
-		int w = tex->rect.x + tex->rect.w / 2;
+		int w = tex->rect.x + tex->rect.w;
 		if (w > largest_w) {
 			largest_w = w;
 		}
@@ -135,6 +136,8 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			int remaining_w = available_rect->w - w;
 			int remaining_h = available_rect->h - h;
 
+			printf("packing \"%s\", remaining %i;%i\n", ident, remaining_w, remaining_h);
+
 			if (remaining_w < 0 || remaining_h < 0) {
 				continue;
 			}
@@ -181,12 +184,12 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
 
-					psx_vram_rect(
-						available_rect->x + page->rect.x,
-						available_rect->y + page->rect.y,
-						available_rect->w,
-						available_rect->h
-					);
+					// psx_vram_rect(
+					// 	available_rect->x + page->rect.x,
+					// 	available_rect->y + page->rect.y,
+					// 	available_rect->w,
+					// 	available_rect->h
+					// );
 				}
 
 				// Bottom left-overs
@@ -207,12 +210,12 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 					printf("...bottom %i;%i;%i;%i\n",
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
-					psx_vram_rect(
-						available_rect->x + page->rect.x,
-						available_rect->y + page->rect.y,
-						available_rect->w,
-						available_rect->h
-					);
+					// psx_vram_rect(
+					// 	available_rect->x + page->rect.x,
+					// 	available_rect->y + page->rect.y,
+					// 	available_rect->w,
+					// 	available_rect->h
+					// );
 				}
 			}
 
@@ -220,15 +223,13 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 		}
 	}
 
-	if (target_tex == NULL) {
-		for (int p = 0; p < ARRAY_SIZE(vram_pages); ++p) {
-			// TODO PSX lazy
-			if (p == 0 || p == 1 || p == 4 || p == 5) continue;
-			printf("Unable to fit new texture, recompacting page %d...\n", p);
-			struct vram_texpage * page = &vram_pages[p];
-			psx_vram_compact(page);
-		}
-	}
+	// if (target_tex == NULL) {
+	// 	for (int p = 0; p < ARRAY_SIZE(vram_pages); ++p) {
+	// 		printf("Unable to fit new texture, recompacting page %d...\n", p);
+	// 		struct vram_texpage * page = &vram_pages[p];
+	// 		psx_vram_compact(page);
+	// 	}
+	// }
 
 exit:
 	return target_tex;
@@ -248,52 +249,48 @@ void psx_vram_init (void)
 		page->rect.w = VRAM_PAGE_WIDTH;
 		page->rect.h = VRAM_PAGE_HEIGHT;
 		page->textures_count = 0;
-		// page->used_h = 0;
-		// page->is_full = false;
-		printf("TexPage init %i;%i %ix%i\n",
-			   page->rect.x, page->rect.y, page->rect.w, page->rect.h);
 
-		page->available_rects[0].x = 0;
-		page->available_rects[0].y = 0;
-		page->available_rects[0].w = VRAM_PAGE_WIDTH;
-		page->available_rects[0].h = VRAM_PAGE_HEIGHT;
-		page->available_rects_count = 1;
+		if (page->rect.x < VID_WIDTH) {
+			struct vram_texture * tex = vram_tex_alloc();
+			page->textures[0] = tex;
+			page->textures_count += 1;
+
+			tex->rect.x = 0;
+			tex->rect.y = 0;
+			tex->rect.h = VRAM_PAGE_HEIGHT;
+			tex->rect.w = VRAM_PAGE_WIDTH; // VID_WIDTH - page->rect.x;
+			// if (tex->rect.w > VRAM_PAGE_WIDTH) {
+			// 	tex->rect.w = VRAM_PAGE_WIDTH;
+			// 	page->available_rects_count = 0;
+			// } else {
+			// 	page->available_rects[0].x = tex->rect.w;
+			// 	page->available_rects[0].y = 0;
+			// 	page->available_rects[0].w = VRAM_PAGE_WIDTH - tex->rect.w;
+			// 	page->available_rects[0].h = VRAM_PAGE_HEIGHT;
+			// 	page->available_rects_count = 1;
+			// }
+   //
+			// printf("TexPage fb init %i;%i %ix%i: used %i;%i %ix%i\n",
+			// 	page->rect.x, page->rect.y, page->rect.w, page->rect.h,
+			// 	tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h);
+		} else {
+			page->available_rects[0].x = 0;
+			page->available_rects[0].y = 0;
+			page->available_rects[0].w = VRAM_PAGE_WIDTH;
+			page->available_rects[0].h = VRAM_PAGE_HEIGHT;
+			page->available_rects_count = 1;
+
+			printf("TexPage empty init %i;%i %ix%i\n",
+				page->rect.x, page->rect.y, page->rect.w, page->rect.h);
+		}
+
+		psx_vram_rect(
+			page->rect.x,
+			page->rect.y,
+			page->rect.w,
+			page->rect.h
+		);
 	}
 
-	int vidpartw = VID_WIDTH - VRAM_PAGE_WIDTH;
-	vram_pages[0].available_rects_count = 0;
-	// vram_pages[1].available_rects_count = 0;
-	vram_pages[1].available_rects[0].x = vidpartw;
-	vram_pages[1].available_rects[0].w -= vidpartw;
-	int texid = vram_textures_count++;
-	vram_pages[1].textures[0] = &vram_textures[texid];
-	vram_pages[1].textures[0]->ident = 0;
-	vram_pages[1].textures[0]->index = texid;
-	vram_pages[1].textures[0]->rect.x = 0;
-	vram_pages[1].textures[0]->rect.y = 0;
-	vram_pages[1].textures[0]->rect.w = vidpartw;
-	vram_pages[1].textures[0]->rect.h = VID_HEIGHT;
-
-	vram_pages[4].available_rects_count = 0;
-	// vram_pages[5].available_rects_count = 0;
-	vram_pages[5].available_rects[0].x = vidpartw;
-	vram_pages[5].available_rects[0].w -= vidpartw;
-	texid = vram_textures_count++;
-	vram_pages[5].textures[0] = &vram_textures[texid];
-	vram_pages[5].textures[0]->ident = 0;
-	vram_pages[5].textures[0]->index = texid;
-	vram_pages[5].textures[0]->rect.x = 0;
-	vram_pages[5].textures[0]->rect.y = 0;
-	vram_pages[5].textures[0]->rect.w = vidpartw;
-	vram_pages[5].textures[0]->rect.h = VID_HEIGHT;
-
-	// vram_pages[1].available_rects[0].x = VID_WIDTH - VRAM_PAGE_WIDTH;
-	// vram_pages[1].available_rects[0].w -= VID_WIDTH - VRAM_PAGE_WIDTH;
-	// vram_pages[5].available_rects[0].x = VID_WIDTH - VRAM_PAGE_WIDTH;
-	// vram_pages[5].available_rects[0].w -= VID_WIDTH - VRAM_PAGE_WIDTH;
-
-	// vram_pages[0].is_full = true;
-	// vram_pages[1].is_full = true;
-	// vram_pages[5].is_full = true;
-	// vram_pages[6].is_full = true;
+	psx_rb_present();
 }
