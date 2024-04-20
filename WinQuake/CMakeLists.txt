@@ -60,6 +60,7 @@ set(SW_SRC
 	# psxlib/psx_math.c
 	psxlib/lib.c
 	psxlib/crc16.c
+	psxlib/psx_gl.c
 	vid_psx.c
 
 	draw.c
@@ -102,6 +103,8 @@ set(GL_SRC
 	psxlib/crc16.c
 	psxlib/crc32.c
 	psxlib/gl.c
+	psxlib/psx_gl.c
+	psxlib/psx_gl_vram.c
 	sys_psx.c
 	gl_vidpsx.c
 

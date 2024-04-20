@@ -21,110 +21,61 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "d_local.h"
+#include "psxlib/psx_gl.h"
 
 #include <psxgpu.h>
 #include <psxgte.h>
 
 // viddef_t vid;                // global video state
 
-#define BASEWIDTH   320
-#define BASEHEIGHT  240
-// #define BASEHEIGHT  200
+#define VID_WIDTH   320
+#define VID_HEIGHT  240
 
-byte    vid_buffer[BASEWIDTH * BASEHEIGHT];
-uint16_t    vid_buffer16[BASEWIDTH * BASEHEIGHT];
-short   zbuffer[BASEWIDTH * BASEHEIGHT];
+byte    vid_buffer[VID_WIDTH * VID_HEIGHT];
+short   zbuffer[VID_WIDTH * VID_HEIGHT];
 byte    surfcache[256 * 1024];
-
-uint8_t pribuf[2][1024];
 
 unsigned short  d_8to16table[256];
 unsigned    d_8to24table[256];
 
-#define OTLEN 8
-static uint32_t ot[2][OTLEN];    // Ordering table length
-
-static DISPENV disp[2];
-static DRAWENV draw[2];
-
-static uint16_t psx_rgb16(uint8_t r, uint8_t g, uint8_t b)
-{
-    uint16_t p = 0;
-
-    p |= (r >> 3) << 0;
-    p |= (g >> 3) << 5;
-    p |= (b >> 3) << 10;
-
-    return p;
-}
-
-static uint32_t psx_rgb24(uint8_t r, uint8_t g, uint8_t b)
-{
-    uint32_t ret = 0;
-
-    ret |= r << 0;
-    ret |= g << 16;
-    ret |= b << 24;
-
-    return ret;
-}
+static RECT psx_clut_rect = {
+	.x = 0,
+	.y = (2 * VID_HEIGHT),
+	.w = 16 * 16,
+	.h = 1,
+};
+uint16_t psx_clut = 0;
 
 void VID_SetPalette(unsigned char * palette)
 {
-    Sys_Printf("VID_SetPalette\n");
-
     for (int i = 0; i < 256; ++i) {
-        d_8to16table[i] = psx_rgb16(palette[i*3], palette[i*3+1], palette[i*3+2]);
-        // TODO PSX unused for now
-        // d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
+        d_8to16table[i] = psx_rgb16(palette[i*3], palette[i*3+1], palette[i*3+2], 0);
+        d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
     }
+	LoadImage(&psx_clut_rect, (uint32_t*) d_8to16table);
+	psx_clut = getClut(psx_clut_rect.x, psx_clut_rect.y);
 }
 
 void VID_ShiftPalette(unsigned char * palette)
 {
-    Sys_Printf("VID_ShiftPalette\n");
     VID_SetPalette(palette);
 }
 
 void VID_Init(unsigned char * palette)
 {
-    vid.maxwarpwidth = vid.width = vid.conwidth = BASEWIDTH;
-    vid.maxwarpheight = vid.height = vid.conheight = BASEHEIGHT;
+    vid.maxwarpwidth = vid.width = vid.conwidth = VID_WIDTH;
+    vid.maxwarpheight = vid.height = vid.conheight = VID_HEIGHT;
     vid.aspect = 1.0;
     vid.numpages = 1;
     vid.colormap = host_colormap;
     vid.fullbright = 256 - LittleLong(*((int *)vid.colormap + 2048));
     vid.buffer = vid.conbuffer = vid_buffer;
-    vid.rowbytes = vid.conrowbytes = BASEWIDTH;
+    vid.rowbytes = vid.conrowbytes = VID_WIDTH;
 
     d_pzbuffer = zbuffer;
     D_InitCaches(surfcache, sizeof(surfcache));
 
-    // SetDefDispEnv(&disp, 0, 0, BASEWIDTH, BASEHEIGHT);
-    // SetDefDrawEnv(&draw, 0, 0, BASEWIDTH, BASEHEIGHT);
-
-	SetDefDispEnv(&disp[0], 0, 0, BASEWIDTH, BASEHEIGHT);
-    SetDefDrawEnv(&draw[0], 0, BASEHEIGHT, BASEWIDTH, BASEHEIGHT);
-    // Second buffer
-    SetDefDispEnv(&disp[1], 0, BASEHEIGHT, BASEWIDTH, BASEHEIGHT);
-    SetDefDrawEnv(&draw[1], 0, 0, BASEWIDTH, BASEHEIGHT);
-
-    disp[0].isinter = 0; /* Enable interlace (required for hires) */
-    disp[1].isinter = 0; /* Enable interlace (required for hires) */
-
-    /* Set clear color, area clear and dither processing */
-    setRGB0(&draw[0], 63, 0, 127);
-    draw[0].isbg = 1;
-    draw[0].dtd = 1;
-    setRGB0(&draw[1], 63, 0, 127);
-    draw[1].isbg = 1;
-    draw[1].dtd = 1;
-
-    /* Apply the display and drawing environments */
-    // PutDispEnv(&disp);
-    // PutDrawEnv(&draw);
-
-	SetDispMask(1);
+    psx_rb_init();
 }
 
 void VID_Shutdown(void)
@@ -135,54 +86,39 @@ int db = 0;
 
 void VID_Update(vrect_t * rects)
 {
-	// ClearOTagR(ot[db], OTLEN);  // Clear ordering table
-
-	// unsigned tpage = getTPage(2, 0, BASEWIDTH, BASEHEIGHT);
-    draw[db].tpage = getTPage(4, 0, 0, 0);
-
-    TIM_IMAGE tim;
-
-    RECT r = {
-        .x = 0,
-        .y = 0,
-        .w = BASEWIDTH,
-        .h = BASEHEIGHT,
-    };
-    tim.mode = 4;
-    tim.prect = &r;
-    tim.paddr = (void*)vid_buffer16;
-
     RECT c = {
-        .x = 0,
-        .y = 0,
-        .w = BASEWIDTH,
-        .h = BASEHEIGHT,
+        .x = 512,
+        .y = psx_db * VID_HEIGHT,
+        .w = VID_WIDTH / 2,
+        .h = VID_HEIGHT,
     };
-    // tim.crect = &c;
-    // tim.caddr = (void*)d_8to16table;
-    tim.crect = NULL;
-    tim.caddr = NULL;
+    LoadImage(&c, (uint32_t*)vid_buffer);
 
-    for (int i = 0; i < sizeof(vid_buffer); ++i) {
-        vid_buffer16[i] = d_8to16table[vid_buffer[i]];
-    }
+    POLY_FT4 * p = (void*)rb_nextpri;
 
-    LoadImage(tim.prect, (uint32_t*)tim.paddr);
-    // LoadImage(tim.crect, tim.caddr);
+    setPolyFT4(p);
+    setXYWH(p, 0, 0, 255, VID_HEIGHT);
+    setUVWH(p, 0, 0, 255, VID_HEIGHT);
+    setRGB0(p, 128, 128, 128);
+    setTPage(p, 1, 0, 512, 0);
+    p->clut = psx_clut;
 
-    /* Wait for GPU and VSync */
-    DrawSync(0);
-    VSync(0);
+    psx_add_prim(p, 0);
+    rb_nextpri = (void*)++p;
 
-    /* Since draw.isbg is non-zero this clears the screen */
-    PutDispEnv(&disp[db]);
-    PutDrawEnv(&draw[db]);
+    p = (void*)rb_nextpri;
 
-	SetDispMask(1);             // Enable the display
+    setPolyFT4(p);
+    setXYWH(p, 255, 0, VID_WIDTH - 255, VID_HEIGHT);
+    setUVWH(p, 0, 0, VID_WIDTH - 255, VID_HEIGHT);
+    setRGB0(p, 128, 128, 128);
+    setTPage(p, 1, 0, 512 + 128, 0);
+    p->clut = psx_clut;
 
-    // DrawOTag(ot[db]+OTLEN-1);
+    psx_add_prim(p, 0);
+    rb_nextpri = (void*)++p;
 
-	// db = !db;
+    psx_rb_present();
 }
 
 void Sys_SendKeyEvents(void)
