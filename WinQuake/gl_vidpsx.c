@@ -69,8 +69,8 @@ qboolean isPermedia = false;
 qboolean gl_mtexable = false;
 
 
-#define OT_LEN 		256
-#define PRIBUF_LEN 	(8 * 1024)
+#define OT_LEN 		1024
+#define PRIBUF_LEN 	(32 * 1024)
 
 struct PQRenderBuf
 {
@@ -83,10 +83,12 @@ struct PQRenderBuf
 static int db = 0;
 static struct PQRenderBuf rb[2];
 uint8_t * rb_nextpri;
-uint16_t psx_zlevel = 0;;
+uint16_t psx_zlevel = 0;
 
+static int pricount = 0;
 void psx_add_prim(void * prim, int z)
 {
+	pricount += 1;
 	if (z < 0) {
 		z += OT_LEN;
 	}
@@ -230,6 +232,15 @@ void GL_BeginRendering (int *x, int *y, int *width, int *height)
 
 void GL_EndRendering (void)
 {
+	printf("Frame pricount %d %d\n", pricount, (rb[db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
+	pricount = 0;
+	if (rb_nextpri >= rb[db].pribuf + sizeof(rb->pribuf)) {
+		Sys_Error("Prim buf overflow, %d\n", rb_nextpri - (rb[db].pribuf + sizeof(rb->pribuf)));
+	}
+	if (psx_zlevel >= OT_LEN) {
+		Sys_Error("psx_zlevel out of bounds\n");
+	}
+
     DrawSync(0);
     VSync(0);
 
@@ -244,9 +255,6 @@ void GL_EndRendering (void)
 	SetDispMask(1);
 
 	DrawOTag(rb[!db].ot + (OT_LEN - 1));
-	if (psx_zlevel >= OT_LEN) {
-		Sys_Error("psx_zlevel out of bounds\n");
-	}
 	psx_zlevel = 0;
 }
 

@@ -499,18 +499,36 @@ void Draw_Character (int x, int y, int num)
 
 	tex = psx_vram_get(char_texture);
 
-	POLY_FT4 * poly = (void*)rb_nextpri;
+	SPRT_8 * sprt = (void*)rb_nextpri;
 
-	setPolyFT4(poly);
-	setXYWH(poly, x, y, 8, 8);
-	setUVWH(poly, col * 8, row * 8, 8, 8);
-	setRGB0(poly, 128, 128, 128);
-	poly->clut = psx_clut_transparent;
-	poly->tpage = tex->tpage;
+	setSprt8(sprt);
+	setXY0(sprt, x, y);
+	setUV0(sprt, col * 8, row * 8);
+	setRGB0(sprt, 128, 128, 128);
+	sprt->clut = psx_clut_transparent;
 
-	psx_add_prim(poly, psx_zlevel++);
-	poly++;
-	rb_nextpri = (void*)poly;
+	psx_add_prim(sprt, psx_zlevel++);
+	rb_nextpri = (void*)++sprt;
+
+	DR_TPAGE * tp = (void*)rb_nextpri;
+
+	setDrawTPage(tp, 0, 1, tex->tpage);
+
+	psx_add_prim(tp, psx_zlevel - 1);
+	rb_nextpri = (void*)++tp;
+
+	// POLY_FT4 * poly = (void*)rb_nextpri;
+ //
+	// setPolyFT4(poly);
+	// setXYWH(poly, x, y, 8, 8);
+	// setUVWH(poly, col * 8, row * 8, 8, 8);
+	// setRGB0(poly, 128, 128, 128);
+	// poly->clut = psx_clut_transparent;
+	// poly->tpage = tex->tpage;
+ //
+	// psx_add_prim(poly, psx_zlevel++);
+	// poly++;
+	// rb_nextpri = (void*)poly;
 }
 
 /*
