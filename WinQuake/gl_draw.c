@@ -553,8 +553,9 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 
 	// TODO PSX split into multiple textures
 
-	// printf("DrawPic %ix%i %ix%i %i;%i %ix%i\n", x, y, pic->width, pic->height,
-	// 	   tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h);
+	// printf("DrawPic (%04x) %ix%i %ix%i %i;%i %ix%i tp %i\n",
+	// 	   tex->ident, x, y, pic->width, pic->height,
+	// 	   tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h, tex->tpage);
 
 	POLY_FT4 * poly = (void*)rb_nextpri;
 
@@ -563,8 +564,8 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 	setUVWH(poly,
 		tex->rect.x * 2,
 		tex->rect.y,
-		tex->rect.w - 1,
-		tex->rect.h - 1
+		tex->rect.w,
+		tex->rect.h
 	);
 	setRGB0(poly, 128, 128, 128);
 	poly->clut = tex->alpha ? psx_clut_transparent : psx_clut;
@@ -915,25 +916,25 @@ GL_MipMap
 Operates in place, quartering the size of the texture
 ================
 */
-void GL_MipMap (byte *in, int width, int height)
-{
-	int		i, j;
-	byte	*out;
-
-	width <<=2;
-	height >>= 1;
-	out = in;
-	for (i=0 ; i<height ; i++, in+=width)
-	{
-		for (j=0 ; j<width ; j+=8, out+=4, in+=8)
-		{
-			out[0] = (in[0] + in[4] + in[width+0] + in[width+4])>>2;
-			out[1] = (in[1] + in[5] + in[width+1] + in[width+5])>>2;
-			out[2] = (in[2] + in[6] + in[width+2] + in[width+6])>>2;
-			out[3] = (in[3] + in[7] + in[width+3] + in[width+7])>>2;
-		}
-	}
-}
+// void GL_MipMap (byte *in, int width, int height)
+// {
+// 	int		i, j;
+// 	byte	*out;
+//
+// 	width <<=2;
+// 	height >>= 1;
+// 	out = in;
+// 	for (i=0 ; i<height ; i++, in+=width)
+// 	{
+// 		for (j=0 ; j<width ; j+=8, out+=4, in+=8)
+// 		{
+// 			out[0] = (in[0] + in[4] + in[width+0] + in[width+4])>>2;
+// 			out[1] = (in[1] + in[5] + in[width+1] + in[width+5])>>2;
+// 			out[2] = (in[2] + in[6] + in[width+2] + in[width+6])>>2;
+// 			out[3] = (in[3] + in[7] + in[width+3] + in[width+7])>>2;
+// 		}
+// 	}
+// }
 
 /*
 ================
@@ -1125,8 +1126,6 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	int div = 1;
 	struct vram_texture * tex;
 
-	printf("GL_LoadTexture \"%s\" %ix%i\n", identifier, width, height);
-
 	// see if the texture is already present
 	tex = psx_vram_find(identifier, width, height);
 	if (tex) {
@@ -1181,11 +1180,13 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	tex->div = div;
 	tex->alpha = alpha;
 
-	if (tex->rect.w == 256) {
-		tex->rect.w -= 1;
+	printf("GL_LoadTexture \"%s\" (%04x) %ix%i\n", identifier, tex->ident, width, height);
+
+	if (tex->rect.x + tex->rect.w >= UINT8_MAX) {
+		tex->rect.w = UINT8_MAX - tex->rect.x;
 	}
-	if (tex->rect.h == 256) {
-		tex->rect.h -= 1;
+	if (tex->rect.y + tex->rect.h >= UINT8_MAX) {
+		tex->rect.h = UINT8_MAX - tex->rect.y;
 	}
 
 	return tex->index;

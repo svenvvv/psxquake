@@ -58,6 +58,7 @@ void psx_vram_init (void);
 struct vram_texture * psx_vram_get (int index);
 struct vram_texture * psx_vram_pack (char * ident, int w, int h);
 struct vram_texture * psx_vram_find (char * ident, int w, int h);
+void psx_vram_rect(int x, int y, int w, int h);
 
 void psx_rb_init(void);
 void psx_rb_present(void);

@@ -58,7 +58,7 @@ struct vram_texture * psx_vram_find (char * ident, int w, int h)
 	return NULL;
 }
 
-static void psx_vram_rect(int x, int y, int w, int h)
+void psx_vram_rect(int x, int y, int w, int h)
 {
 	FILL * fill = (FILL*)rb_nextpri;
 	setFill(fill);
@@ -136,7 +136,7 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			int remaining_w = available_rect->w - w;
 			int remaining_h = available_rect->h - h;
 
-			printf("packing \"%s\", remaining %i;%i\n", ident, remaining_w, remaining_h);
+			// printf("packing \"%s\", remaining %i;%i\n", ident, remaining_w, remaining_h);
 
 			if (remaining_w < 0 || remaining_h < 0) {
 				continue;
@@ -150,8 +150,13 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			target_tex->rect.h = h;
 			target_tex->page = page;
 			target_tex->tpage = getTPage(1, 0,
-										page->rect.x + target_tex->rect.x,
+										(page->rect.x + target_tex->rect.x) / 128 * 128,
 										page->rect.y + target_tex->rect.y);
+
+			printf("Packed %s (%u) to %i;%i;%i;%i\n",
+				   ident, ident_hash,
+					page->rect.x + available_rect->x, page->rect.y + available_rect->y,
+					available_rect->w, available_rect->h);
 
 			EnterCriticalSection();
  			page->textures[page->textures_count++] = target_tex;
@@ -259,6 +264,7 @@ void psx_vram_init (void)
 			tex->rect.y = 0;
 			tex->rect.h = VRAM_PAGE_HEIGHT;
 			tex->rect.w = VRAM_PAGE_WIDTH; // VID_WIDTH - page->rect.x;
+			// tex->rect.w = VID_WIDTH - page->rect.x;
 			// if (tex->rect.w > VRAM_PAGE_WIDTH) {
 			// 	tex->rect.w = VRAM_PAGE_WIDTH;
 			// 	page->available_rects_count = 0;
@@ -270,9 +276,10 @@ void psx_vram_init (void)
 			// 	page->available_rects_count = 1;
 			// }
    //
-			// printf("TexPage fb init %i;%i %ix%i: used %i;%i %ix%i\n",
+			// printf("TexPage fb init %i;%i %ix%i: used %i;%i %ix%i, avail %i;%i %ix%i\n",
 			// 	page->rect.x, page->rect.y, page->rect.w, page->rect.h,
-			// 	tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h);
+			// 	tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h,
+			// 	page->available_rects[0].x, page->available_rects[0].y, page->available_rects[0].w, page->available_rects[0].h);
 		} else {
 			page->available_rects[0].x = 0;
 			page->available_rects[0].y = 0;
