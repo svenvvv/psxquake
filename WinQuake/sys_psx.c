@@ -114,11 +114,14 @@ int Sys_FileTime(char * path)
     //     return -1;
     //
     // return buf.st_mtime;
+	printf("Sys_FileTime %s\n", path);
+	return -1;
 }
 
 void Sys_mkdir(char * path)
 {
     // mkdir(path, 0777);
+	printf("Sys_mkdir %s\n", path);
 }
 
 struct PQCdFile pq_cd_files[PSX_CD_FILES_MAX] = { 0 };
@@ -126,7 +129,7 @@ struct PQCdFile pq_cd_files[PSX_CD_FILES_MAX] = { 0 };
 struct PQCdFile * pq_cd_file_alloc(void)
 {
 	struct PQCdFile * ret = NULL;
-	EnterCriticalSection();
+	// EnterCriticalSection();
 	for (int i = 0; i < ARRAY_SIZE(pq_cd_files); ++i) {
 		if (pq_cd_files[i].allocated) {
 			continue;
@@ -136,7 +139,7 @@ struct PQCdFile * pq_cd_file_alloc(void)
 		ret->allocated = true;
 		break;
 	}
-	ExitCriticalSection();
+	// ExitCriticalSection();
 	return ret;
 }
 
@@ -340,16 +343,6 @@ double Sys_FloatTime(void)
 // Sleeps for microseconds
 // =======================================================================
 
-void Sys_LineRefresh(void)
-{
-}
-
-void floating_point_exception_handler(int whatever)
-{
-//  Sys_Warn("floating point exception\n");
-    // signal(SIGFPE, floating_point_exception_handler);
-}
-
 char * Sys_ConsoleInput(void)
 {
 	// Unsupported on PSX
@@ -459,7 +452,7 @@ int main(int c, char ** v)
     Sys_Init();
 	printf("OK\n");
 
-	printf("PSX Quake -- Version %0.3f\n", LINUX_VERSION);
+	printf("PSX Quake\n");
 
     oldtime = Sys_FloatTime() - 0.1;
 
@@ -474,36 +467,6 @@ int main(int c, char ** v)
             oldtime += time;
 
         Host_Frame(time);
-
-// graphic debugging aids
-        if (sys_linerefresh.value)
-            Sys_LineRefresh();
     }
 
 }
-
-/*
-================
-Sys_MakeCodeWriteable
-================
-*/
-// Only for x86
-// void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
-// {
-//
-//  int r;
-//  unsigned long addr;
-//  int psize = getpagesize();
-//
-//  addr = (startaddr & ~(psize-1)) - psize;
-//
-// //   fprintf(stderr, "writable code %lx(%lx)-%lx, length=%lx\n", startaddr,
-// //           addr, startaddr+length, length);
-//
-//  r = mprotect((char*)addr, length + startaddr - addr + psize, 7);
-//
-//  if (r < 0)
-//          Sys_Error("Protection change failed\n");
-//
-// }
-

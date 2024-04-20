@@ -506,10 +506,9 @@ void Draw_Character (int x, int y, int num)
 	setUVWH(poly, col * 8, row * 8, 8, 8);
 	setRGB0(poly, 128, 128, 128);
 	poly->clut = psx_clut_transparent;
-	// setTPage(poly, 1, 0, tex->rect.x, tex->rect.y);
-	poly->tpage = tex->page->tpage;
+	poly->tpage = tex->tpage;
 
-	psx_add_prim(poly, -1);
+	psx_add_prim(poly, psx_zlevel++);
 	poly++;
 	rb_nextpri = (void*)poly;
 }
@@ -558,8 +557,7 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 	setUVWH(poly, tex->rect.x, tex->rect.y, tex->rect.w - 1, tex->rect.h - 1);
 	setRGB0(poly, 128, 128, 128);
 	poly->clut = tex->alpha ? psx_clut_transparent : psx_clut;
-	// setTPage(poly, 1, 0, tex->rect.x, tex->rect.y);
-	poly->tpage = tex->page->tpage;
+	poly->tpage = tex->tpage;
 
 	psx_add_prim(poly, psx_zlevel++);
 	poly++;
@@ -962,6 +960,7 @@ void GL_MipMap8Bit (byte *in, int width, int height)
 
 void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboolean alpha) 
 {
+	return;
 	int			i, s;
 	qboolean	noalpha;
 	int			p;
@@ -1111,7 +1110,7 @@ GL_LoadTexture
 */
 int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha)
 {
-	uint8_t scaled[VRAM_PAGE_WIDTH * VRAM_PAGE_HEIGHT];
+	static uint8_t scaled[VRAM_PAGE_WIDTH * VRAM_PAGE_HEIGHT];
 	int div = 1;
 	struct vram_texture * tex;
 

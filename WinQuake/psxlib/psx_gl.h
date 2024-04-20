@@ -23,7 +23,6 @@
 struct vram_texpage
 {
 	RECT rect;
-	uint16_t tpage;
 	struct vram_texture * textures[PSX_MAX_VRAM_RECTS / VRAM_PAGES];
 	size_t textures_count;
 	RECT available_rects[PSX_MAX_VRAM_RECTS / VRAM_PAGES];
@@ -38,6 +37,7 @@ struct vram_texture
     int div;
     struct vram_texpage * page;
     bool alpha;
+	uint16_t tpage;
 };
 
 extern uint8_t * rb_nextpri;

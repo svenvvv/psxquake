@@ -25,8 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <psxgte.h>
 #include <inline_c.h>
 
-#define WARP_WIDTH              320
-#define WARP_HEIGHT             200
+#define WARP_WIDTH              256
+#define WARP_HEIGHT             256
 
 #define VID_WIDTH 				320 // can't lower it without menus breaking
 #define VID_HEIGHT 				240
@@ -34,11 +34,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define stringify(m) { #m, m }
 
 unsigned short	d_8to16table[256];
-unsigned short	d_8to16table_transparent[256];
 unsigned	d_8to24table[256]; //TODO this can be removed for PSX GL
 // unsigned char d_15to8table[65536];
-
-int num_shades=32;
 
 cvar_t		vid_mode = {"vid_mode","5",false};
 cvar_t		vid_redrawfull = {"vid_redrawfull","0",false};
@@ -67,12 +64,12 @@ const char *gl_renderer;
 const char *gl_version;
 const char *gl_extensions;
 
-qboolean is8bit = false;
+qboolean is8bit = true;
 qboolean isPermedia = false;
 qboolean gl_mtexable = false;
 
 
-#define OT_LEN 		1024
+#define OT_LEN 		256
 #define PRIBUF_LEN 	(8 * 1024)
 
 struct PQRenderBuf
@@ -159,12 +156,15 @@ void	VID_SetPalette (unsigned char *palette)
 {
     for (int i = 0; i < 256; ++i) {
         d_8to16table[i] = psx_rgb16(0x8000, palette[i*3], palette[i*3+1], palette[i*3+2]);
-        d_8to16table_transparent[i] = psx_rgb16(0, palette[i*3], palette[i*3+1], palette[i*3+2]);
         // d_8to24table[i] = psx_rgb24(palette[i*3], palette[i*3+1], palette[i*3+2]);
     }
 	LoadImage(&psx_clut_rect, (uint32_t*) d_8to16table);
-	LoadImage(&psx_clut_transparent_rect, (uint32_t*) d_8to16table_transparent);
 	psx_clut = getClut(psx_clut_rect.x, psx_clut_rect.y);
+
+    for (int i = 0; i < 256; ++i) {
+        d_8to16table[i] = psx_rgb16(0, palette[i*3], palette[i*3+1], palette[i*3+2]);
+    }
+	LoadImage(&psx_clut_transparent_rect, (uint32_t*) d_8to16table);
 	psx_clut_transparent = getClut(psx_clut_transparent_rect.x, psx_clut_transparent_rect.y);
 }
 
@@ -255,78 +255,6 @@ qboolean VID_Is8bit(void)
 	return is8bit;
 }
 
-void VID_Init8bitPalette(void)
-{
-}
-
-// #define PSX_RECT_ID_MAKE(ident, index) (ident << 16 | index)
-
-// #define STB_RECT_PACK_IMPLEMENTATION
-// #include "stb_rect_pack.h"
-//
-// static struct stbrp_context packer_ctx;
-// static struct stbrp_node packer_nodes[PSX_MAX_VRAM_RECTS];
-// static struct stbrp_rect packer_rects[PSX_MAX_VRAM_RECTS];
-// static size_t packer_rects_used;
-//
-// static void psx_vram_init(void)
-// {
-// 	// Init rect packer and register the two framebuffers
-// 	stbrp_init_target(&packer_ctx, 1024, 512, packer_nodes, ARRAY_SIZE(packer_nodes));
-//
-// 	packer_rects[0].id = 0;
-// 	packer_rects[0].x = 0;
-// 	packer_rects[0].y = 0;
-// 	packer_rects[0].w = VID_WIDTH;
-// 	packer_rects[0].h = VID_HEIGHT;
-// 	packer_rects[0].was_packed = 1;
-//
-// 	packer_nodes[0].x = 0;
-// 	packer_nodes[0].y = VID_HEIGHT;
-//
-// 	packer_rects[1].id = 0;
-// 	packer_rects[1].x = 0;
-// 	packer_rects[1].y = VID_HEIGHT;
-// 	packer_rects[1].w = VID_WIDTH;
-// 	packer_rects[1].h = VID_HEIGHT;
-// 	packer_rects[1].was_packed = 1;
-//
-// 	packer_nodes[1].x = 0;
-// 	packer_nodes[1].y = 2 * VID_HEIGHT;
-//
-// 	packer_rects_used = 2;
-// 	// node = context->free_head;
-// 	// node->x = (stbrp_coord) res.x;
-// 	// node->y = (stbrp_coord) (res.y + height);
-//
-// 	packer_ctx.free_head = packer_nodes[2].next;
-// }
-
-// int psx_pack_vram (RECT * r, char * ident, int w, int h)
-// {
-// 	int id = packer_rects_used++;
-// 	struct stbrp_rect * sr = &packer_rects[id];
-//
-// 	uint16_t ident_hash = crc16(0, ident, strlen(ident));
-// 	sr->id = PSX_RECT_ID_MAKE(ident_hash,id);
-// 	sr->w = w;
-// 	sr->h = h;
-//
-// 	stbrp_pack_rects(&packer_ctx, packer_rects, packer_rects_used);
-//
-// 	if (!sr->was_packed) {
-// 		return 0;
-// 	}
-//
-// 	r->x = sr->x;
-// 	r->y = sr->y;
-// 	r->w = sr->w;
-// 	r->h = sr->h;
-// 	printf("VRAM packed to %i;%i %ix%i\n", r->x, r->y, r->w, r->h);
-//
-// 	return id;
-// }
-
 static struct vram_texture vram_textures[PSX_MAX_VRAM_RECTS];
 static size_t vram_textures_count = 0;
 
@@ -338,11 +266,11 @@ static struct vram_texture * vram_tex_alloc(void)
 	struct vram_texture * ret;
 
 	EnterCriticalSection();
-	if (vram_textures_count == ARRAY_SIZE(vram_textures)) {
-		Sys_Error("Out of vram_textures\n");
-	}
 	id = vram_textures_count++;
 	ExitCriticalSection();
+	if (id >= ARRAY_SIZE(vram_textures)) {
+		Sys_Error("Out of vram_textures\n");
+	}
 
 	vram_textures[id].index = id;
 	return &vram_textures[id];
@@ -381,6 +309,62 @@ struct vram_texture * psx_vram_find (char * ident, int w, int h)
 	return NULL;
 }
 
+void psx_vram_rect(int x, int y, int w, int h)
+{
+	return;
+	GL_BeginRendering(0, 0, 0, 0);
+	FILL * fill = (FILL*)rb_nextpri;
+	setFill(fill);
+	setXY0(fill, x, y);
+	setWH(fill, w, h);
+	setRGB0(fill, rand() % 0xFF, rand() % 0xFF, rand() % 0xFF);
+	psx_add_prim(fill, 0);
+	rb_nextpri = (void*)++fill;
+	GL_EndRendering();
+}
+
+void psx_vram_compact(struct vram_texpage * page)
+{
+	int largest_w = 0;
+	RECT * available_rect;
+
+	for (int t = 0; t < page->textures_count; ++t) {
+		struct vram_texture * tex = page->textures[t];
+		int w = tex->rect.x + tex->rect.w / 2;
+		if (w > largest_w) {
+			largest_w = w;
+		}
+	}
+
+	if (largest_w == VRAM_PAGE_WIDTH) {
+		printf("Unable to recompact page\n");
+		return;
+	}
+
+	printf("page largest w %d\n", largest_w);
+
+	EnterCriticalSection();
+	available_rect = &page->available_rects[page->available_rects_count++];
+	ExitCriticalSection();
+	if (page->available_rects_count >= ARRAY_SIZE(page->available_rects)) {
+		Sys_Error("No more available_rects in page\n");
+	}
+
+	// TODO remove largest_w from previous available rects
+
+	available_rect->x = largest_w;
+	available_rect->y = 0;
+	available_rect->w = VRAM_PAGE_WIDTH - largest_w;
+	available_rect->h = VRAM_PAGE_HEIGHT;
+
+	psx_vram_rect(
+		available_rect->x + page->rect.x,
+		available_rect->y + page->rect.y,
+		available_rect->w,
+		available_rect->h
+	);
+}
+
 struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 {
 	uint32_t ident_hash = 0;
@@ -415,14 +399,16 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			target_tex->rect.w = w * 2;
 			target_tex->rect.h = h;
 			target_tex->page = page;
+			target_tex->tpage = getTPage(1, 0,
+										page->rect.x + target_tex->rect.x,
+										page->rect.y + target_tex->rect.y);
 
 			EnterCriticalSection();
-			if (page->textures_count == ARRAY_SIZE(page->textures)) {
-				Sys_Error("No more textures in page\n");
-			}
  			page->textures[page->textures_count++] = target_tex;
 			ExitCriticalSection();
-
+			if (page->textures_count >= ARRAY_SIZE(page->textures)) {
+				Sys_Error("No more textures in page\n");
+			}
 
 			if (remaining_w == 0 || remaining_h == 0) {
 				printf("Discarding %i;%i;%i;%i, remaining %ix%i\n",
@@ -443,10 +429,17 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 				if (remaining_w > 0) {
 					available_rect->x += w;
 					available_rect->w -= w;
-					available_rect->h -= h;
+					available_rect->h = h;
 					printf("...right %i;%i;%i;%i\n",
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
+
+					psx_vram_rect(
+						available_rect->x + page->rect.x,
+						available_rect->y + page->rect.y,
+						available_rect->w,
+						available_rect->h
+					);
 				}
 
 				// Bottom left-overs
@@ -454,11 +447,11 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 					if (remaining_w > 0) {
 						// Allocate new rect for bottom
 						EnterCriticalSection();
-						if (page->available_rects_count == ARRAY_SIZE(page->available_rects)) {
-							Sys_Error("No more available_rects in page\n");
-						}
 						available_rect = &page->available_rects[page->available_rects_count++];
 						ExitCriticalSection();
+						if (page->available_rects_count >= ARRAY_SIZE(page->available_rects)) {
+							Sys_Error("No more available_rects in page\n");
+						}
 					}
 					available_rect->x = target_tex->rect.x;
 					available_rect->y = target_tex->rect.y + h;
@@ -467,10 +460,26 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 					printf("...bottom %i;%i;%i;%i\n",
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
+					psx_vram_rect(
+						available_rect->x + page->rect.x,
+						available_rect->y + page->rect.y,
+						available_rect->w,
+						available_rect->h
+					);
 				}
 			}
 
 			goto exit;
+		}
+	}
+
+	if (target_tex == NULL) {
+		for (int p = 0; p < ARRAY_SIZE(vram_pages); ++p) {
+			// TODO PSX lazy
+			if (p == 0 || p == 1 || p == 4 || p == 5) continue;
+			printf("Unable to fit new texture, recompacting page %d...\n", p);
+			struct vram_texpage * page = &vram_pages[p];
+			psx_vram_compact(page);
 		}
 	}
 
@@ -609,13 +618,39 @@ void psx_vram_init (void)
 		page->available_rects[0].w = VRAM_PAGE_WIDTH;
 		page->available_rects[0].h = VRAM_PAGE_HEIGHT;
 		page->available_rects_count = 1;
-		page->tpage = getTPage(1, 0, page->rect.x, page->rect.y);
 	}
 
+	int vidpartw = VID_WIDTH - VRAM_PAGE_WIDTH;
 	vram_pages[0].available_rects_count = 0;
-	vram_pages[1].available_rects_count = 0;
+	// vram_pages[1].available_rects_count = 0;
+	vram_pages[1].available_rects[0].x = vidpartw;
+	vram_pages[1].available_rects[0].w -= vidpartw;
+	int texid = vram_textures_count++;
+	vram_pages[1].textures[0] = &vram_textures[texid];
+	vram_pages[1].textures[0]->ident = 0;
+	vram_pages[1].textures[0]->index = texid;
+	vram_pages[1].textures[0]->rect.x = 0;
+	vram_pages[1].textures[0]->rect.y = 0;
+	vram_pages[1].textures[0]->rect.w = vidpartw;
+	vram_pages[1].textures[0]->rect.h = VID_HEIGHT;
+
 	vram_pages[4].available_rects_count = 0;
-	vram_pages[5].available_rects_count = 0;
+	// vram_pages[5].available_rects_count = 0;
+	vram_pages[5].available_rects[0].x = vidpartw;
+	vram_pages[5].available_rects[0].w -= vidpartw;
+	texid = vram_textures_count++;
+	vram_pages[5].textures[0] = &vram_textures[texid];
+	vram_pages[5].textures[0]->ident = 0;
+	vram_pages[5].textures[0]->index = texid;
+	vram_pages[5].textures[0]->rect.x = 0;
+	vram_pages[5].textures[0]->rect.y = 0;
+	vram_pages[5].textures[0]->rect.w = vidpartw;
+	vram_pages[5].textures[0]->rect.h = VID_HEIGHT;
+
+	// vram_pages[1].available_rects[0].x = VID_WIDTH - VRAM_PAGE_WIDTH;
+	// vram_pages[1].available_rects[0].w -= VID_WIDTH - VRAM_PAGE_WIDTH;
+	// vram_pages[5].available_rects[0].x = VID_WIDTH - VRAM_PAGE_WIDTH;
+	// vram_pages[5].available_rects[0].w -= VID_WIDTH - VRAM_PAGE_WIDTH;
 
 	// vram_pages[0].is_full = true;
 	// vram_pages[1].is_full = true;
@@ -661,7 +696,20 @@ void VID_Init(unsigned char *palette)
 
 	vid.recalc_refdef = 1;				// force a surface cache flush
 
-
+	// Clear VRAM for debugging
+	GL_BeginRendering(0, 0, 0, 0);
+	for (int y = 0; y < VRAM_HEIGHT; y += 256) {
+		for (int x = 0; x < VRAM_WIDTH; x += 256) {
+			FILL * fill = (FILL*)rb_nextpri;
+			setFill(fill);
+			setXY0(fill, x, y);
+			setWH(fill, 256, 256);
+			setRGB0(fill, 0, 0xFF, 0);
+			psx_add_prim(fill, 0);
+			rb_nextpri = (void*)++fill;
+		}
+	}
+	GL_EndRendering();
 }
 
 void Sys_SendKeyEvents(void)
