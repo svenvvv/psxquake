@@ -73,13 +73,13 @@ FILE * fopen (const char * filename, const char * mode)
     return 0;
 }
 
-int fscanf(FILE *restrict stream, const char *restrict format, ...)
+int fscanf(FILE * stream, const char * format, ...)
 {
     printf("fscanf\n");
     return 0;
 }
 
-int fprintf(FILE *restrict stream, const char *restrict format, ...)
+int fprintf(FILE * stream, const char * format, ...)
 {
     return 0;
 }
@@ -116,7 +116,7 @@ int fseek(FILE *stream, long offset, int whence)
     return 0;
 }
 
-size_t fread(void * ptr, size_t size, size_t nmemb, FILE *restrict stream)
+size_t fread(void * ptr, size_t size, size_t nmemb, FILE * stream)
 {
     struct PQCdFile * f = (void*)stream;
 
@@ -128,7 +128,7 @@ size_t fread(void * ptr, size_t size, size_t nmemb, FILE *restrict stream)
     return Sys_FileRead((int)f, ptr, size * nmemb);
 }
 
-size_t fwrite(const void * ptr, size_t size, size_t nmemb, FILE *restrict stream)
+size_t fwrite(const void * ptr, size_t size, size_t nmemb, FILE * stream)
 {
     return 0;
 }

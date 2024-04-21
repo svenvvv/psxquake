@@ -527,8 +527,8 @@ V_UpdatePalette
 void V_UpdatePalette (void)
 {
 	int		i, j;
-	qboolean	new;
-	byte	*basepal, *newpal;
+	qboolean	isnew;
+	byte	*basepal, *isnewpal;
 	byte	pal[768];
 	float	r,g,b,a;
 	int		ir, ig, ib;
@@ -536,19 +536,19 @@ void V_UpdatePalette (void)
 
 	V_CalcPowerupCshift ();
 	
-	new = false;
+	isnew = false;
 	
 	for (i=0 ; i<NUM_CSHIFTS ; i++)
 	{
 		if (cl.cshifts[i].percent != cl.prev_cshifts[i].percent)
 		{
-			new = true;
+			isnew = true;
 			cl.prev_cshifts[i].percent = cl.cshifts[i].percent;
 		}
 		for (j=0 ; j<3 ; j++)
 			if (cl.cshifts[i].destcolor[j] != cl.prev_cshifts[i].destcolor[j])
 			{
-				new = true;
+				isnew = true;
 				cl.prev_cshifts[i].destcolor[j] = cl.cshifts[i].destcolor[j];
 			}
 	}
@@ -564,7 +564,7 @@ void V_UpdatePalette (void)
 		cl.cshifts[CSHIFT_BONUS].percent = 0;
 
 	force = V_CheckGamma ();
-	if (!new && !force)
+	if (!isnew && !force)
 		return;
 
 	V_CalcBlend ();
@@ -593,7 +593,7 @@ void V_UpdatePalette (void)
 	}
 
 	basepal = host_basepal;
-	newpal = pal;
+	isnewpal = pal;
 	
 	for (i=0 ; i<256 ; i++)
 	{
@@ -602,10 +602,10 @@ void V_UpdatePalette (void)
 		ib = basepal[2];
 		basepal += 3;
 		
-		newpal[0] = ramps[0][ir];
-		newpal[1] = ramps[1][ig];
-		newpal[2] = ramps[2][ib];
-		newpal += 3;
+		isnewpal[0] = ramps[0][ir];
+		isnewpal[1] = ramps[1][ig];
+		isnewpal[2] = ramps[2][ib];
+		isnewpal += 3;
 	}
 
 	VID_ShiftPalette (pal);	
@@ -614,27 +614,27 @@ void V_UpdatePalette (void)
 void V_UpdatePalette (void)
 {
 	int		i, j;
-	qboolean	new;
-	byte	*basepal, *newpal;
+	qboolean	isnew;
+	byte	*basepal, *isnewpal;
 	byte	pal[768];
 	int		r,g,b;
 	qboolean force;
 
 	V_CalcPowerupCshift ();
 	
-	new = false;
+	isnew = false;
 	
 	for (i=0 ; i<NUM_CSHIFTS ; i++)
 	{
 		if (cl.cshifts[i].percent != cl.prev_cshifts[i].percent)
 		{
-			new = true;
+			isnew = true;
 			cl.prev_cshifts[i].percent = cl.cshifts[i].percent;
 		}
 		for (j=0 ; j<3 ; j++)
 			if (cl.cshifts[i].destcolor[j] != cl.prev_cshifts[i].destcolor[j])
 			{
-				new = true;
+				isnew = true;
 				cl.prev_cshifts[i].destcolor[j] = cl.cshifts[i].destcolor[j];
 			}
 	}
@@ -650,11 +650,11 @@ void V_UpdatePalette (void)
 		cl.cshifts[CSHIFT_BONUS].percent = 0;
 
 	force = V_CheckGamma ();
-	if (!new && !force)
+	if (!isnew && !force)
 		return;
 			
 	basepal = host_basepal;
-	newpal = pal;
+	isnewpal = pal;
 	
 	for (i=0 ; i<256 ; i++)
 	{
@@ -670,10 +670,10 @@ void V_UpdatePalette (void)
 			b += (cl.cshifts[j].percent*(cl.cshifts[j].destcolor[2]-b))>>8;
 		}
 		
-		newpal[0] = gammatable[r];
-		newpal[1] = gammatable[g];
-		newpal[2] = gammatable[b];
-		newpal += 3;
+		isnewpal[0] = gammatable[r];
+		isnewpal[1] = gammatable[g];
+		isnewpal[2] = gammatable[b];
+		isnewpal += 3;
 	}
 
 	VID_ShiftPalette (pal);	

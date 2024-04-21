@@ -21,7 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-
+void R_InitParticles();
+void R_ClearParticles();
+qboolean VID_Is8bit();
+void GL_BuildLightmaps();
+void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboolean alpha);
 
 /*
 ==================

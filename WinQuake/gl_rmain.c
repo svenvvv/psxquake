@@ -70,8 +70,17 @@ texture_t	*r_notexture_mip;
 
 int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
-
+void R_AnimateLight (void);
+void V_CalcBlend (void);
+void R_DrawBrushModel (entity_t * e);
+void R_RenderBrushPoly (msurface_t * fa);
+void R_DrawWaterSurfaces (void);
+void R_DrawWorld (void);
+void R_DrawParticles (void);
+void R_RenderDlights (void);
 void R_MarkLeaves (void);
+int R_LightPoint (vec3_t p);
+void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
 
 cvar_t	r_norefresh = {"r_norefresh","0"};
 cvar_t	r_drawentities = {"r_drawentities","1"};
@@ -811,7 +820,6 @@ void R_SetupFrame (void)
 {
 	int				edgecount;
 	vrect_t			vrect;
-	float			w, h;
 
 // don't allow cheats in multiplayer
 	if (cl.maxclients > 1)
@@ -1033,64 +1041,65 @@ R_Mirror
 */
 void R_Mirror (void)
 {
-	float		d;
-	msurface_t	*s;
-	entity_t	*ent;
-
-	if (!mirror)
-		return;
-
-	memcpy (r_base_world_matrix, r_world_matrix, sizeof(r_base_world_matrix));
-
-	d = DotProduct (r_refdef.vieworg, mirror_plane->normal) - mirror_plane->dist;
-	VectorMA (r_refdef.vieworg, -2*d, mirror_plane->normal, r_refdef.vieworg);
-
-	d = DotProduct (vpn, mirror_plane->normal);
-	VectorMA (vpn, -2*d, mirror_plane->normal, vpn);
-
-	r_refdef.viewangles[0] = -asin (vpn[2])/M_PI*180;
-	r_refdef.viewangles[1] = atan2 (vpn[1], vpn[0])/M_PI*180;
-	r_refdef.viewangles[2] = -r_refdef.viewangles[2];
-
-	ent = &cl_entities[cl.viewentity];
-	if (cl_numvisedicts < MAX_VISEDICTS)
-	{
-		cl_visedicts[cl_numvisedicts] = ent;
-		cl_numvisedicts++;
-	}
-
-	gldepthmin = 0.5;
-	gldepthmax = 1;
-	glDepthRange (gldepthmin, gldepthmax);
-	glDepthFunc (GL_LEQUAL);
-
-	R_RenderScene ();
-	R_DrawWaterSurfaces ();
-
-	gldepthmin = 0;
-	gldepthmax = 0.5;
-	glDepthRange (gldepthmin, gldepthmax);
-	glDepthFunc (GL_LEQUAL);
-
-	// blend on top
-	glEnable (GL_BLEND);
-	glMatrixMode(GL_PROJECTION);
-	if (mirror_plane->normal[2])
-		glScalef (1,-1,1);
-	else
-		glScalef (-1,1,1);
-	glCullFace(GL_FRONT);
-	glMatrixMode(GL_MODELVIEW);
-
-	glLoadMatrixf (r_base_world_matrix);
-
-	glColor4f (1,1,1,r_mirroralpha.value);
-	s = cl.worldmodel->textures[mirrortexturenum]->texturechain;
-	for ( ; s ; s=s->texturechain)
-		R_RenderBrushPoly (s);
-	cl.worldmodel->textures[mirrortexturenum]->texturechain = NULL;
-	glDisable (GL_BLEND);
-	glColor4f (1,1,1,1);
+	// TODO PSX
+	// float		d;
+	// msurface_t	*s;
+	// entity_t	*ent;
+ //
+	// if (!mirror)
+	// 	return;
+ //
+	// memcpy (r_base_world_matrix, r_world_matrix, sizeof(r_base_world_matrix));
+ //
+	// d = DotProduct (r_refdef.vieworg, mirror_plane->normal) - mirror_plane->dist;
+	// VectorMA (r_refdef.vieworg, -2*d, mirror_plane->normal, r_refdef.vieworg);
+ //
+	// d = DotProduct (vpn, mirror_plane->normal);
+	// VectorMA (vpn, -2*d, mirror_plane->normal, vpn);
+ //
+	// r_refdef.viewangles[0] = -asin (vpn[2])/M_PI*180;
+	// r_refdef.viewangles[1] = atan2 (vpn[1], vpn[0])/M_PI*180;
+	// r_refdef.viewangles[2] = -r_refdef.viewangles[2];
+ //
+	// ent = &cl_entities[cl.viewentity];
+	// if (cl_numvisedicts < MAX_VISEDICTS)
+	// {
+	// 	cl_visedicts[cl_numvisedicts] = ent;
+	// 	cl_numvisedicts++;
+	// }
+ //
+	// gldepthmin = 0.5;
+	// gldepthmax = 1;
+	// glDepthRange (gldepthmin, gldepthmax);
+	// glDepthFunc (GL_LEQUAL);
+ //
+	// R_RenderScene ();
+	// R_DrawWaterSurfaces ();
+ //
+	// gldepthmin = 0;
+	// gldepthmax = 0.5;
+	// glDepthRange (gldepthmin, gldepthmax);
+	// glDepthFunc (GL_LEQUAL);
+ //
+	// // blend on top
+	// glEnable (GL_BLEND);
+	// glMatrixMode(GL_PROJECTION);
+	// if (mirror_plane->normal[2])
+	// 	glScalef (1,-1,1);
+	// else
+	// 	glScalef (-1,1,1);
+	// glCullFace(GL_FRONT);
+	// glMatrixMode(GL_MODELVIEW);
+ //
+	// glLoadMatrixf (r_base_world_matrix);
+ //
+	// glColor4f (1,1,1,r_mirroralpha.value);
+	// s = cl.worldmodel->textures[mirrortexturenum]->texturechain;
+	// for ( ; s ; s=s->texturechain)
+	// 	R_RenderBrushPoly (s);
+	// cl.worldmodel->textures[mirrortexturenum]->texturechain = NULL;
+	// glDisable (GL_BLEND);
+	// glColor4f (1,1,1,1);
 }
 
 /*

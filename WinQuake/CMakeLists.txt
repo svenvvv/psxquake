@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 
+# set(CMAKE_C_STANDARD 11)
+
 project(
 	quake1
-	LANGUAGES    C ASM
+	LANGUAGES    C CXX ASM
 	VERSION      1.0.0
 	DESCRIPTION  "Quake 1 PSX port"
 	HOMEPAGE_URL ""
@@ -98,13 +100,13 @@ set(SW_SRC
 set(GL_SRC
 	in_psx.c
 	psxlib/psx_io.c
-	# psxlib/psx_math.c
 	psxlib/lib.c
 	psxlib/crc16.c
 	psxlib/crc32.c
 	psxlib/gl.c
 	psxlib/psx_gl.c
 	psxlib/psx_gl_vram.c
+	# psxlib/psx_softfp.c
 	sys_psx.c
 	gl_vidpsx.c
 
@@ -115,7 +117,7 @@ set(GL_SRC
 	gl_rlight.c
 	gl_rmain.c
 	gl_rmisc.c
-	gl_rsurf.c
+	gl_rsurf_psx.c
 	gl_screen.c
 	gl_warp.c
 )
@@ -131,6 +133,8 @@ include_directories(BEFORE SYSTEM
 
 file(GLOB MATH_SRC psxlib/ext/*.c)
 
+add_compile_options(-fpermissive -Wno-write-strings)
+
 set(SWQUAKE_SRC ${COMMON_SRC} ${SW_SRC} ${MATH_SRC})
 psn00bsdk_add_executable(swquake GPREL ${SWQUAKE_SRC})
 # install(FILES ${PROJECT_BINARY_DIR}/swquake.exe TYPE BIN)
@@ -139,6 +143,9 @@ set(GLQUAKE_SRC ${COMMON_SRC} ${GL_SRC} ${MATH_SRC})
 psn00bsdk_add_executable(glquake GPREL ${GLQUAKE_SRC})
 target_compile_definitions(glquake PRIVATE -DGLQUAKE)
 # install(FILES ${PROJECT_BINARY_DIR}/glquake.exe TYPE BIN)
+
+set_source_files_properties(${SWQUAKE_SRC} PROPERTIES LANGUAGE CXX)
+set_source_files_properties(${GLQUAKE_SRC} PROPERTIES LANGUAGE CXX)
 
 psn00bsdk_add_cd_image(
 	quake_iso quake psx_cd/iso.xml

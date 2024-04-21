@@ -1068,6 +1068,8 @@ done: ;
 GL_Upload8
 ===============
 */
+qboolean VID_Is8bit(void);
+
 void GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean alpha)
 {
 	return;

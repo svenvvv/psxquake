@@ -326,6 +326,7 @@ void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr)
 
 		BuildTris ();		// trifans or lists
 
+#ifndef PSX
 		//
 		// save out the cached version
 		//
@@ -339,6 +340,7 @@ void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr)
 			fwrite (&vertexorder, numorder * sizeof(vertexorder[0]), 1, f);
 			fclose (f);
 		}
+#endif
 	}
 
 

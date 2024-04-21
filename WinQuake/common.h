@@ -18,16 +18,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // comndef.h  -- general definitions
+#include <stdbool.h>
 
 #if !defined BYTE_DEFINED
 typedef unsigned char 		byte;
 #define BYTE_DEFINED 1
 #endif
 
-#undef true
-#undef false
+// #undef true
+// #undef false
 
-typedef enum {false, true}	qboolean;
+// typedef enum {false, true}	qboolean;
+typedef bool qboolean;
 
 //============================================================================
 

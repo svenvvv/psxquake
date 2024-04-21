@@ -192,7 +192,7 @@ void	Host_FindMaxClients (void)
 	svs.maxclientslimit = svs.maxclients;
 	if (svs.maxclientslimit < 4)
 		svs.maxclientslimit = 4;
-	svs.clients = Hunk_AllocName (svs.maxclientslimit*sizeof(client_t), "clients");
+	svs.clients = (client_t*) Hunk_AllocName (svs.maxclientslimit*sizeof(client_t), "clients");
 
 	if (svs.maxclients > 1)
 		Cvar_SetValue ("deathmatch", 1.0);
@@ -446,7 +446,7 @@ void Host_ShutdownServer(qboolean crash)
 	while (count);
 
 // make sure all the clients know we're disconnecting
-	buf.data = message;
+	buf.data = (char*) message;
 	buf.maxsize = 4;
 	buf.cursize = 0;
 	MSG_WriteByte(&buf, svc_disconnect);
@@ -846,22 +846,34 @@ void Host_Init (quakeparms_t *parms)
 	host_parms = *parms;
 
 	if (parms->memsize < minimum_memory)
-		Sys_Error ("Only %4.1f megs of memory available, can't execute game", parms->memsize / (float)0x100000);
+		Sys_Error ("Only %u megs of memory available, can't execute game", parms->memsize / (1024 * 1024));
 
 	com_argc = parms->argc;
 	com_argv = parms->argv;
 
+	printf("mem init\n");
 	Memory_Init (parms->membase, parms->memsize);
+	printf("cbuf init\n");
 	Cbuf_Init ();
+	printf("cmd init\n");
 	Cmd_Init ();	
+	printf("v init\n");
 	V_Init ();
+	printf("chase init\n");
 	Chase_Init ();
+	printf("vcr init\n");
 	Host_InitVCR (parms);
+	printf("com init\n");
 	COM_Init (parms->basedir);
+	printf("local init\n");
 	Host_InitLocal ();
+	printf("loadwad init\n");
 	W_LoadWadFile ("gfx.wad");
+	printf("key init\n");
 	Key_Init ();
+	printf("con init\n");
 	Con_Init ();	
+	printf("m init\n");
 	M_Init ();	
 	PR_Init ();
 	Mod_Init ();
@@ -869,7 +881,7 @@ void Host_Init (quakeparms_t *parms)
 	SV_Init ();
 
 	Con_Printf ("Exe: "__TIME__" "__DATE__"\n");
-	Con_Printf ("%4.1f megabyte heap\n",parms->memsize/ (1024*1024.0));
+	Con_Printf ("%u megabyte heap\n",parms->memsize / (1024*1024));
 	
 	R_InitTextures ();		// needed even for dedicated servers
  

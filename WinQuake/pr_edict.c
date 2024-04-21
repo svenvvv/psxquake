@@ -692,12 +692,12 @@ ED_NewString
 */
 char *ED_NewString (char *string)
 {
-	char	*new, *new_p;
+	char	*newstr, *newstr_p;
 	int		i,l;
 	
 	l = strlen(string) + 1;
-	new = Hunk_Alloc (l);
-	new_p = new;
+	newstr = Hunk_Alloc (l);
+	newstr_p = newstr;
 
 	for (i=0 ; i< l ; i++)
 	{
@@ -705,15 +705,15 @@ char *ED_NewString (char *string)
 		{
 			i++;
 			if (string[i] == 'n')
-				*new_p++ = '\n';
+				*newstr_p++ = '\n';
 			else
-				*new_p++ = '\\';
+				*newstr_p++ = '\\';
 		}
 		else
-			*new_p++ = string[i];
+			*newstr_p++ = string[i];
 	}
 	
-	return new;
+	return newstr;
 }
 
 

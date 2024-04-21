@@ -33,7 +33,7 @@ void glDisable( GLenum cap )
 
 }
 
-void glBegin(void)
+void glBegin(GLenum mode)
 {
     // printf("glBegin\n");
 }

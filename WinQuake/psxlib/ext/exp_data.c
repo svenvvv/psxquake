@@ -12,15 +12,15 @@
 const struct exp_data __exp_data = {
 // N/ln2
 .invln2N = 0x1.71547652b82fep0 * N,
-// -ln2/N
-.negln2hiN = -0x1.62e42fefa0000p-8,
-.negln2loN = -0x1.cf79abc9e3b3ap-47,
-// Used for rounding when !TOINT_INTRINSICS
 #if EXP_USE_TOINT_NARROW
 .shift = 0x1800000000.8p0,
 #else
 .shift = 0x1.8p52,
 #endif
+// -ln2/N
+.negln2hiN = -0x1.62e42fefa0000p-8,
+.negln2loN = -0x1.cf79abc9e3b3ap-47,
+// Used for rounding when !TOINT_INTRINSICS
 // exp polynomial coefficients.
 .poly = {
 // abs error: 1.555*2^-66

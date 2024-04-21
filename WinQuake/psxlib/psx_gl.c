@@ -1,5 +1,6 @@
 #include "psx_gl.h"
 #include "psx_io.h"
+#include "../sys.h"
 #include <stdio.h>
 
 int psx_db = 0;

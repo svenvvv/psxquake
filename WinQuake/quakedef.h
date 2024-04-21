@@ -47,6 +47,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #if defined(PSX)
 #include "psxlib/psx_io.h"
+#include "psxlib/psx_gl.h"
+#include "psxlib/gl.h"
 #endif
 
 #if defined(_WIN32) && !defined(WINDED)
@@ -108,6 +110,7 @@ void	VID_UnlockBuffer (void);
 //
 // per-level limits
 //
+
 #define	MAX_EDICTS		600			// FIXME: ouch! ouch! ouch!
 #define	MAX_LIGHTSTYLES	64
 #define	MAX_MODELS		256			// these are sent over the net as bytes

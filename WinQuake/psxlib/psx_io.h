@@ -24,15 +24,19 @@ int fseek(FILE * stream, long int offset, int origin);
 
 int fclose(FILE *stream);
 
-size_t fread(void * ptr, size_t size, size_t nmemb, FILE *restrict stream);
+int fgetc(FILE * stream);
 
-size_t fwrite(const void * ptr, size_t size, size_t nmemb, FILE *restrict stream);
+int feof(FILE *stream);
 
-int fprintf(FILE *restrict stream, const char *restrict format, ...);
+size_t fread(void * ptr, size_t size, size_t nmemb, FILE * stream);
+
+size_t fwrite(const void * ptr, size_t size, size_t nmemb, FILE * stream);
+
+int fprintf(FILE * stream, const char * format, ...);
 
 int fflush(FILE * stream);
 
-int fscanf(FILE *restrict stream, const char *restrict format, ...);
+int fscanf(FILE * stream, const char * format, ...);
 
 int unlink(char const * pathname);
 

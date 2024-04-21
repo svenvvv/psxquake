@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "d_local.h"
 #include "r_local.h"
+#include <stdbool.h>
 
 float           surfscale;
 qboolean        r_cache_thrash;         // set if surface cache is thrashing
@@ -129,7 +130,7 @@ D_SCAlloc
 */
 surfcache_t     *D_SCAlloc (int width, int size)
 {
-	surfcache_t             *new;
+	surfcache_t             *newcache;
 	qboolean                wrapped_this_time;
 
 	if ((width < 0) || (width > 256))
@@ -156,11 +157,11 @@ surfcache_t     *D_SCAlloc (int width, int size)
 	}
 		
 // colect and free surfcache_t blocks until the rover block is large enough
-	new = sc_rover;
+	newcache = sc_rover;
 	if (sc_rover->owner)
 		*sc_rover->owner = NULL;
 	
-	while (new->size < size)
+	while (newcache->size < size)
 	{
 	// free another
 		sc_rover = sc_rover->next;
@@ -169,30 +170,30 @@ surfcache_t     *D_SCAlloc (int width, int size)
 		if (sc_rover->owner)
 			*sc_rover->owner = NULL;
 			
-		new->size += sc_rover->size;
-		new->next = sc_rover->next;
+		newcache->size += sc_rover->size;
+		newcache->next = sc_rover->next;
 	}
 
 // create a fragment out of any leftovers
-	if (new->size - size > 256)
+	if (newcache->size - size > 256)
 	{
-		sc_rover = (surfcache_t *)( (byte *)new + size);
-		sc_rover->size = new->size - size;
-		sc_rover->next = new->next;
+		sc_rover = (surfcache_t *)( (byte *)newcache + size);
+		sc_rover->size = newcache->size - size;
+		sc_rover->next = newcache->next;
 		sc_rover->width = 0;
 		sc_rover->owner = NULL;
-		new->next = sc_rover;
-		new->size = size;
+		newcache->next = sc_rover;
+		newcache->size = size;
 	}
 	else
-		sc_rover = new->next;
+		sc_rover = newcache->next;
 	
-	new->width = width;
+	newcache->width = width;
 // DEBUG
 	if (width > 0)
-		new->height = (size - sizeof(*new) + sizeof(new->data)) / width;
+		newcache->height = (size - sizeof(*newcache) + sizeof(newcache->data)) / width;
 
-	new->owner = NULL;              // should be set properly after return
+	newcache->owner = NULL;              // should be set properly after return
 
 	if (d_roverwrapped)
 	{
@@ -205,7 +206,7 @@ surfcache_t     *D_SCAlloc (int width, int size)
 	}
 
 D_CheckCacheGuard ();   // DEBUG
-	return new;
+	return newcache;
 }
 
 

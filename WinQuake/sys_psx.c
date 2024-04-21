@@ -378,7 +378,7 @@ int main(int c, char ** v)
     int j;
 
 	// 8MiB RAM
-	InitHeap((void *) _end + 4, (void *) 0x80000000 + 0x7f0000 - (void *) _end);
+	InitHeap((uint8_t *) _end + 4, (uint8_t *) 0x80000000 + 0x7f0000 - (uint8_t *) _end);
 	// 2MiB RAM TODO unsupported
 	// InitHeap((void *) _end + 4, (void *) 0x80000000 + 0x1ffff8 - (void *) _end);
 	printf("_end %p\n", _end);
