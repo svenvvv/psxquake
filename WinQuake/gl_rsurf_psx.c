@@ -708,9 +708,7 @@ DrawGLPoly
 ================
 */
 void draw_tri(SVECTOR const * a, SVECTOR const * b, SVECTOR const * c, CVECTOR const * color);
-void draw_quad(SVECTOR const * a, SVECTOR const * b,
-			   SVECTOR const * c, SVECTOR const * d,
-			   CVECTOR const * color);
+void draw_quad(SVECTOR const a[4], CVECTOR const * color);
 
 void DrawGLPoly (glpoly_t *p)
 {
@@ -720,11 +718,11 @@ void DrawGLPoly (glpoly_t *p)
 	if (p->numverts == 4) {
 		SVECTOR verts[4];
 		CVECTOR color = { rand(), rand(), rand() };
-		verts[3] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
+		verts[0] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
 		verts[2] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
-		verts[1] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
-		verts[0] = { p->verts[3][0], p->verts[3][1], p->verts[3][2] };
-		draw_quad(&verts[0], &verts[1], &verts[2], &verts[3], &color);
+		verts[3] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
+		verts[1] = { p->verts[3][0], p->verts[3][1], p->verts[3][2] };
+		draw_quad(verts, &color);
 	} else if (p->numverts == 3) {
 		SVECTOR verts[3];
 		CVECTOR color = { 255, 0, 0 };

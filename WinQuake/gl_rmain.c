@@ -394,14 +394,12 @@ int tri_clip(RECT *clip, DVECTOR *v0, DVECTOR *v1, DVECTOR *v2) {
 	return 1;
 }
 
-void draw_quad(SVECTOR const * a, SVECTOR const * b,
-			   SVECTOR const * c, SVECTOR const * d,
-			   CVECTOR const * color)
+void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
 {
 	int gv;
 	POLY_F4 * poly = (POLY_F4 *) rb_nextpri;
 
-	gte_ldv3(a, b, c);
+	gte_ldv3(&verts[0], &verts[1], &verts[2]);
 
 	gte_rtpt();
 	gte_nclip();
@@ -410,20 +408,19 @@ void draw_quad(SVECTOR const * a, SVECTOR const * b,
 		return;
 	}
 
-	gte_avsz3();
+	setPolyF4(poly);
+
+	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+
+	gte_ldv0(&verts[3]);
+	gte_rtps();
+
+	gte_avsz4();
 	gte_stotz(&gv);
 	if ((gv >> 2) > OT_LEN) {
 		return;
 	}
 
-	setPolyF4(poly);
-
-	gte_stsxy0(&(poly->x0));
-	gte_stsxy1(&(poly->x1));
-	gte_stsxy2(&(poly->x2));
-
-	gte_ldv0(d);
-	gte_rtps();
 	gte_stsxy(&poly->x3);
 
 	setRGB0(poly, color->r, color->g, color->b);
@@ -464,9 +461,7 @@ void draw_tri(SVECTOR const * a, SVECTOR const * b, SVECTOR const * c, CVECTOR c
 
 	setPolyF3(poly);
 
-	gte_stsxy0(&(poly->x0));
-	gte_stsxy1(&(poly->x1));
-	gte_stsxy2(&(poly->x2));
+	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
 
 	setRGB0(poly, color->r, color->g, color->b);
 
