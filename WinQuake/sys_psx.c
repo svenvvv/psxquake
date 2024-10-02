@@ -40,7 +40,7 @@ void Sys_DebugNumber(int y, int val)
 void Sys_Printf(char * fmt, ...)
 {
     va_list     argptr;
-    char        text[256];
+    static char        text[256];
     unsigned char    *   p;
 
     va_start(argptr, fmt);
@@ -179,7 +179,7 @@ int Sys_FileOpenRead(char * path, int * handle)
 		goto error;
 	}
 
-	f->filename_hash = crc16(0, path, strlen(path));
+	f->filename_hash = crc16(0, (uint8_t const*) path, strlen(path));
 	*handle = (int)f;
 	return f->file.size;
 error:
@@ -217,7 +217,7 @@ int pq_cd_file_is_valid(struct PQCdFile const * f)
 
 void Sys_FileClose(int handle)
 {
-	struct PQCdFile * f = (void*)handle;
+	struct PQCdFile * f = (struct PQCdFile *)handle;
 
 	if (!pq_cd_file_is_valid(f)) {
 		Sys_Warn("Invalid file handle access");
@@ -233,7 +233,7 @@ void Sys_FileClose(int handle)
 
 void Sys_FileSeek(int handle, int position)
 {
-	struct PQCdFile * f = (void*)handle;
+	struct PQCdFile * f = (struct PQCdFile *) handle;
 
 	printf("Sys_FileSeek 0x%p %u\n", f, position);
 
@@ -257,7 +257,7 @@ int pq_cd_file_fill_read_buf(struct PQCdFile * f)
 	CdIntToPos(position, &loc);
 	CdControl(CdlSetloc, &loc, 0);
 
-	CdRead(1, (void*)f->read_buf, CdlModeSpeed);
+	CdRead(1, (uint32_t *) f->read_buf, CdlModeSpeed);
 	if (CdReadSync(0, 0) < 0) {
 		Sys_Error("Failed to read from CD drive");
 	}
@@ -269,7 +269,7 @@ int pq_cd_file_fill_read_buf(struct PQCdFile * f)
 int Sys_FileRead(int handle, void * dest, int count)
 {
 	size_t copied = 0;
-	struct PQCdFile * f = (void*)handle;
+	struct PQCdFile * f = (struct PQCdFile*) handle;
 
 	if (!pq_cd_file_is_valid(f)) {
 		Sys_Warn("Invalid file handle access");
@@ -300,7 +300,7 @@ int Sys_FileRead(int handle, void * dest, int count)
 		if ((copied + copy_len) > count) {
 			copy_len = count - copied;
 		}
-		memcpy(dest + copied, f->read_buf + f->cursor_bytes, copy_len);
+		memcpy((uint8_t*) dest + copied, f->read_buf + f->cursor_bytes, copy_len);
 
 		copied += copy_len;
 
@@ -377,16 +377,23 @@ int main(int c, char ** v)
     quakeparms_t parms;
     int j;
 
+	void * heap_addr = _end + 4;
+#ifndef PSXQUAKE_2MB_RAM
 	// 8MiB RAM
-	InitHeap((uint8_t *) _end + 4, (uint8_t *) 0x80000000 + 0x7f0000 - (uint8_t *) _end);
+	size_t heap_size = (uint8_t *)(0x80000000 + 0x7ffff8) - _end;
+#else
 	// 2MiB RAM TODO unsupported
-	// InitHeap((void *) _end + 4, (void *) 0x80000000 + 0x1ffff8 - (void *) _end);
-	printf("_end %p\n", _end);
+	size_t heap_size = (uint8_t *)(0x80000000 + 0x1ffff8) - _end;
+#endif
+	printf("Allocating heap at %p, size %u\n", heap_addr, heap_size);
+	EnterCriticalSection();
+	InitHeap(_end + 4, heap_size);
+	ExitCriticalSection();
 
 	printf("Starting up Quake, video mode %s...\n", GetVideoMode() == MODE_PAL ? "PAL" : "NTSC");
 
 	ResetGraph(0);
-	FntLoad(960, 0);
+	// FntLoad(960, 0);
 
 	EnterCriticalSection();
 	if (GetVideoMode() == MODE_PAL) {
@@ -404,19 +411,19 @@ int main(int c, char ** v)
 	CdControl(CdlNop, 0, 0);
 	CdStatus();
 
-	printf("Files on CD:\n");
-	CdlDIR * dir = CdOpenDir("\\");
-	CdlFILE files[32];
-	int files_found = 0;
-	if (dir) {
-		while(CdReadDir(dir, &files[files_found]) ) {
-			printf("%s\n", files[files_found].name);
-			files_found++;
-		}
-		CdCloseDir(dir);
-	} else {
-		printf("directory not found\n");
-	}
+	// printf("Files on CD:\n");
+	// CdlDIR * dir = CdOpenDir("\\");
+	// CdlFILE files[32];
+	// int files_found = 0;
+	// if (dir) {
+	// 	while(CdReadDir(dir, &files[files_found]) ) {
+	// 		printf("%s\n", files[files_found].name);
+	// 		files_found++;
+	// 	}
+	// 	CdCloseDir(dir);
+	// } else {
+	// 	printf("directory not found\n");
+	// }
 
 	//  signal(SIGFPE, floating_point_exception_handler);
     // signal(SIGFPE, SIG_IGN);
@@ -429,13 +436,8 @@ int main(int c, char ** v)
     parms.argc = com_argc;
     parms.argv = com_argv;
 
-    // parms.memsize = 1 * 1024 * 1024;
-    parms.memsize = sizeof(membase); //6 * 1024 * 1024;
 
-//     parms.membase = malloc(parms.memsize);
-// 	if (parms.membase == NULL) {
-// 		Sys_Error("Failed to allocate %u bytes", parms.memsize);
-// 	}
+    parms.memsize = sizeof(membase);
 	parms.membase = membase;
 
     parms.basedir = basedir;

@@ -54,8 +54,12 @@ void psx_rb_init(void)
 
 void psx_rb_present(void)
 {
-    // printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
+    printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
     pricount = 0;
+
+    // if (pricount > 400) {
+    //     return;
+    // }
 
     if (rb_nextpri >= rb[psx_db].pribuf + sizeof(rb->pribuf)) {
         Sys_Error("Prim buf overflow, %d\n", rb_nextpri - (rb[psx_db].pribuf + sizeof(rb->pribuf)));
@@ -70,14 +74,14 @@ void psx_rb_present(void)
 
     psx_db = !psx_db;
     rb_nextpri = rb[psx_db].pribuf;
+    psx_zlevel = 0;
 
-    ClearOTagR(rb[psx_db].ot, ARRAY_SIZE(rb->ot));
+    ClearOTagR(rb[psx_db].ot, OT_LEN);
 
-    PutDispEnv(&rb[psx_db].disp);
     PutDrawEnv(&rb[psx_db].draw);
+    PutDispEnv(&rb[psx_db].disp);
 
     SetDispMask(1);
 
-    DrawOTag(rb[!psx_db].ot + (OT_LEN - 1));
-    psx_zlevel = 0;
+    DrawOTag(rb[1-psx_db].ot + (OT_LEN - 1));
 }

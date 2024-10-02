@@ -17,6 +17,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
+
+#include <psxgpu.h>
+#include <psxgte.h>
   
 #ifdef _WIN32
 #include <windows.h>
@@ -222,7 +225,7 @@ extern	int			mirrortexturenum;	// quake texturenum, not gltexturenum
 extern	qboolean	mirror;
 extern	mplane_t	*mirror_plane;
 
-extern	float	r_world_matrix[16];
+extern	MATRIX	r_world_matrix;
 
 extern	const char *gl_vendor;
 extern	const char *gl_renderer;

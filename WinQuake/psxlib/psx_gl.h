@@ -15,8 +15,8 @@
 #define VRAM_PAGE_HEIGHT 256
 #define VRAM_PAGES ((VRAM_WIDTH / VRAM_PAGE_WIDTH) * (VRAM_HEIGHT / VRAM_PAGE_HEIGHT))
 
-#define OT_LEN 		1024
-#define PRIBUF_LEN 	(32 * 1024)
+#define OT_LEN 		(1 * 1024)
+#define PRIBUF_LEN 	(128 * 1024)
 
 struct PQRenderBuf
 {
@@ -65,7 +65,21 @@ void psx_rb_present(void);
 
 // void psx_add_prim(void * prim, int z);
 
-static inline void psx_add_prim(void * prim, int z)
+// static inline void psx_add_prim(void * prim, int z)
+// {
+//     extern int pricount;
+//     extern struct PQRenderBuf rb[2];
+//
+// 	pricount += 1;
+// 	if (z < 0) {
+// 		z += OT_LEN;
+// 	}
+// 	addPrim(rb[psx_db].ot + (OT_LEN - z - 1), prim);
+// 	// rb_nextpri = prim;
+// }
+
+template <typename T>
+static inline void psx_add_prim(T * prim, int z)
 {
     extern int pricount;
     extern struct PQRenderBuf rb[2];
@@ -74,8 +88,25 @@ static inline void psx_add_prim(void * prim, int z)
 	if (z < 0) {
 		z += OT_LEN;
 	}
+
 	addPrim(rb[psx_db].ot + (OT_LEN - z - 1), prim);
-	// rb_nextpri = prim;
+	rb_nextpri = (uint8_t *) ++prim;
+}
+
+template <typename T>
+static inline void psx_add_prim_z(T * prim, int z)
+{
+    extern int pricount;
+    extern struct PQRenderBuf rb[2];
+
+	if (pricount > 1000) {
+		return;
+	}
+
+	pricount += 1;
+
+	addPrim(rb[psx_db].ot + z, prim);
+	rb_nextpri = (uint8_t *) prim + sizeof(T);
 }
 
 static inline uint16_t psx_rgb16(uint8_t r, uint8_t g, uint8_t b, uint8_t stp)

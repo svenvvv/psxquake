@@ -48,8 +48,9 @@ struct vram_texture * psx_vram_find (char * ident, int w, int h)
 		struct vram_texture * tex = &vram_textures[i];
 		if (tex->ident == ident_hash) {
 			if (w > 0 && w != tex->rect.w || h > 0 && h != tex->rect.h) {
- 				Sys_Error ("psx_vram_find: cache mismatch 0x%X: %ix%i != %ix%i\n",
-						   tex->ident, w, h, tex->rect.w, tex->rect.h);
+				// TODO PSX tex->rect.h is sometimes one less than h ???
+ 				printf("psx_vram_find: cache mismatch 0x%X: %ix%i != %ix%i\n",
+					   tex->ident, w, h, tex->rect.w, tex->rect.h);
 			}
 			return tex;
 		}

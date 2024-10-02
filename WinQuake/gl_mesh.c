@@ -301,6 +301,7 @@ void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr)
 	aliasmodel = m;
 	paliashdr = hdr;	// (aliashdr_t *)Mod_Extradata (m);
 
+#ifndef PSX
 	//
 	// look for a cached version
 	//
@@ -319,6 +320,7 @@ void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr)
 	}
 	else
 	{
+#endif
 		//
 		// build it from scratch
 		//
@@ -340,8 +342,8 @@ void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr)
 			fwrite (&vertexorder, numorder * sizeof(vertexorder[0]), 1, f);
 			fclose (f);
 		}
-#endif
 	}
+#endif
 
 
 	// save the data out

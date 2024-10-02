@@ -572,8 +572,6 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 	poly->tpage = tex->tpage;
 
 	psx_add_prim(poly, psx_zlevel++);
-	poly++;
-	rb_nextpri = (void*)poly;
 }
 
 /*
@@ -755,21 +753,14 @@ Draw_FadeScreen
 */
 void Draw_FadeScreen (void)
 {
-	printf("Draw_FadeScreen\n");
-	// glEnable (GL_BLEND);
-	// glDisable (GL_TEXTURE_2D);
-	// glColor4f (0, 0, 0, 0.8);
-	// glBegin (GL_QUADS);
- //
-	// glVertex2f (0,0);
-	// glVertex2f (vid.width, 0);
-	// glVertex2f (vid.width, vid.height);
-	// glVertex2f (0, vid.height);
- //
-	// glEnd ();
-	// glColor4f (1,1,1,1);
-	// glEnable (GL_TEXTURE_2D);
-	// glDisable (GL_BLEND);
+	POLY_F4 * poly = (void*)rb_nextpri;
+
+	setPolyF4(poly);
+	setXYWH(poly, 0, 0, vid.width, vid.height);
+	setRGB0(poly, 0, 0, 0);
+	setSemiTrans(poly, 1);
+
+	psx_add_prim(poly, psx_zlevel++);
 
 	Sbar_Changed();
 }

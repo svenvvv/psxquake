@@ -21,6 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include <psxgpu.h>
+#include <psxgte.h>
+#include <inline_c.h>
+
+
 
 int			skytexturenum;
 
@@ -429,6 +433,8 @@ void R_DrawSequentialPoly (msurface_t *s)
 	float		s1, t1;
 	glRect_t	*theRect;
 
+	return;
+
 	//
 	// normal lightmaped poly
 	//
@@ -472,18 +478,8 @@ void R_DrawSequentialPoly (msurface_t *s)
 		// 	glEnd ();
 		// 	return;
 		// } else {
-			p = s->polys;
 
 			t = R_TextureAnimation (s->texinfo->texture);
-			GL_Bind (t->gl_texturenum);
-			glBegin (GL_POLYGON);
-			v = p->verts[0];
-			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
-			{
-				glTexCoord2f (v[3], v[4]);
-				glVertex3fv (v);
-			}
-			glEnd ();
 
 			// GL_Bind (lightmap_textures + s->lightmaptexturenum);
 			// glEnable (GL_BLEND);
@@ -496,9 +492,66 @@ void R_DrawSequentialPoly (msurface_t *s)
 			// }
 			// glEnd ();
 
-			glDisable (GL_BLEND);
-		// }
+			POLY_FT3 * poly = (void*)rb_nextpri;
 
+			v = p->verts[0];
+			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+			{
+				// glTexCoord2f (v[5], v[6]);
+				// glVertex3fv (v);
+				int32_t gv;
+				SVECTOR vertices[3] = { v[0], v[1], v[2] };
+
+				gte_ldv3(
+					&vertices[0],
+					&vertices[1],
+					&vertices[2]
+				);
+
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&gv);
+				if (gv < 0)
+					continue;
+
+				gte_avsz4();
+				gte_stotz(&gv);
+				if ((gv >> 2) > OT_LEN)
+					continue;
+
+				setPolyFT3(poly);
+
+				gte_stsxy0(&(poly->x0));
+				gte_stsxy1(&(poly->x1));
+				gte_stsxy2(&(poly->x2));
+
+				setRGB0(poly, 63, 0, 127);
+
+				SVECTOR norm = 	{ 0, -ONE, 0, 0 };
+
+				gte_ldrgb(&(poly->r0));
+				gte_ldv0(&norm);
+				gte_ncs();
+				gte_strgb(&(poly->r0));
+
+				psx_add_prim(poly, 0);
+				// poly++;
+				// rb_nextpri = (void*)poly;
+			}
+
+
+			// GL_Bind (t->gl_texturenum);
+			// glBegin (GL_POLYGON);
+			// v = p->verts[0];
+			// for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+			// {
+			// 	glTexCoord2f (v[3], v[4]);
+			// 	glVertex3fv (v);
+			// }
+			// glEnd ();
+
+			// glDisable (GL_BLEND);
+		// }
 		return;
 	}
 
@@ -519,20 +572,20 @@ void R_DrawSequentialPoly (msurface_t *s)
 	//
 	if (s->flags & SURF_DRAWSKY)
 	{
-		GL_DisableMultitexture();
-		GL_Bind (solidskytexture);
+		// GL_DisableMultitexture();
+		// GL_Bind (solidskytexture);
 		speedscale = realtime*8;
 		speedscale -= (int)speedscale & ~127;
 
 		EmitSkyPolys (s);
 
-		glEnable (GL_BLEND);
-		GL_Bind (alphaskytexture);
+		// glEnable (GL_BLEND);
+		// GL_Bind (alphaskytexture);
 		speedscale = realtime*16;
 		speedscale -= (int)speedscale & ~127;
 		EmitSkyPolys (s);
 
-		glDisable (GL_BLEND);
+		// glDisable (GL_BLEND);
 		return;
 	}
 
@@ -654,10 +707,41 @@ void DrawGLWaterPolyLightmap (glpoly_t *p)
 DrawGLPoly
 ================
 */
+void draw_tri(SVECTOR const * a, SVECTOR const * b, SVECTOR const * c, CVECTOR const * color);
+void draw_quad(SVECTOR const * a, SVECTOR const * b,
+			   SVECTOR const * c, SVECTOR const * d,
+			   CVECTOR const * color);
+
 void DrawGLPoly (glpoly_t *p)
 {
 	int		i;
 	float	*v;
+
+	if (p->numverts == 4) {
+		SVECTOR verts[4];
+		CVECTOR color = { rand(), rand(), rand() };
+		verts[3] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
+		verts[2] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
+		verts[1] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
+		verts[0] = { p->verts[3][0], p->verts[3][1], p->verts[3][2] };
+		draw_quad(&verts[0], &verts[1], &verts[2], &verts[3], &color);
+	} else if (p->numverts == 3) {
+		SVECTOR verts[3];
+		CVECTOR color = { 255, 0, 0 };
+
+		verts[2] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
+		verts[1] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
+		verts[0] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
+		draw_tri(&verts[0], &verts[1], &verts[2], &color);
+	} else {
+		printf("DrawGLPoly ignoring %d\n", (int)p->numverts);
+	}
+	// v = p->verts[0];
+	// for (i=0 ; i<p->numverts ; i++, v += VERTEXSIZE)
+	// {
+	// 	glTexCoord2f (v[3], v[4]);
+	// 	glVertex3fv (v);
+	// }
 
 	// glBegin (GL_POLYGON);
 	// v = p->verts[0];
@@ -969,7 +1053,8 @@ void R_DrawWaterSurfaces (void)
 	// go back to the world matrix
 	//
 
-    glLoadMatrixf (r_world_matrix);
+	// TODO PSX
+    // glLoadMatrixf (r_world_matrix);
 
 	if (r_wateralpha.value < 1.0) {
 		glEnable (GL_BLEND);
@@ -1145,7 +1230,7 @@ void R_DrawBrushModel (entity_t *e)
 		}
 	}
 
-    glPushMatrix ();
+    // PushMatrix ();
 e->angles[0] = -e->angles[0];	// stupid quake bug
 	R_RotateForEntity (e);
 e->angles[0] = -e->angles[0];	// stupid quake bug
@@ -1173,7 +1258,7 @@ e->angles[0] = -e->angles[0];	// stupid quake bug
 
 	// R_BlendLightmaps ();
 
-	glPopMatrix ();
+	// PopMatrix ();
 }
 
 /*
@@ -1604,14 +1689,14 @@ with all the surfaces from all brush models
 */
 void GL_BuildLightmaps (void)
 {
-	// int		i, j;
-	// model_t	*m;
-	// extern qboolean isPermedia;
- //
+	int		i, j;
+	model_t	*m;
+	extern qboolean isPermedia;
+
 	// memset (allocated, 0, sizeof(allocated));
- //
-	// r_framecount = 1;		// no dlightcache
- //
+
+	r_framecount = 1;		// no dlightcache
+
 	// if (!lightmap_textures)
 	// {
 	// 	lightmap_textures = texture_extension_number;
@@ -1649,27 +1734,27 @@ void GL_BuildLightmaps (void)
 	// 	break;
 	// }
  //
-	// for (j=1 ; j<MAX_MODELS ; j++)
-	// {
-	// 	m = cl.model_precache[j];
-	// 	if (!m)
-	// 		break;
-	// 	if (m->name[0] == '*')
-	// 		continue;
-	// 	r_pcurrentvertbase = m->vertexes;
-	// 	currentmodel = m;
-	// 	for (i=0 ; i<m->numsurfaces ; i++)
-	// 	{
-	// 		GL_CreateSurfaceLightmap (m->surfaces + i);
-	// 		if ( m->surfaces[i].flags & SURF_DRAWTURB )
-	// 			continue;
+	for (j=1 ; j<MAX_MODELS ; j++)
+	{
+		m = cl.model_precache[j];
+		if (!m)
+			break;
+		if (m->name[0] == '*')
+			continue;
+		r_pcurrentvertbase = m->vertexes;
+		currentmodel = m;
+		for (i=0 ; i<m->numsurfaces ; i++)
+		{
+			GL_CreateSurfaceLightmap (m->surfaces + i);
+			if ( m->surfaces[i].flags & SURF_DRAWTURB )
+				continue;
 #ifndef QUAKE2
-	// 		if ( m->surfaces[i].flags & SURF_DRAWSKY )
-	// 			continue;
+			if ( m->surfaces[i].flags & SURF_DRAWSKY )
+				continue;
 #endif
-	// 		BuildSurfaceDisplayList (m->surfaces + i);
-	// 	}
-	// }
+			BuildSurfaceDisplayList (m->surfaces + i);
+		}
+	}
  //
  // 	if (!gl_texsort.value)
  // 		GL_SelectTexture(TEXTURE1_SGIS);

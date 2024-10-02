@@ -135,16 +135,6 @@ void glLoadMatrixf( const GLfloat *m )
 
 }
 
-void glPushMatrix( void )
-{
-
-}
-
-void glPopMatrix( void )
-{
-
-}
-
 void glLoadIdentity( void )
 {
 }

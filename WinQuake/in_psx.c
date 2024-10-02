@@ -45,12 +45,31 @@ void IN_Shutdown(void)
 {
 }
 
+
+#include <psxgte.h>
+#include <inline_c.h>
+
+volatile int psx_in_r = 0;
+volatile int psx_in_l = 0;
+
 void IN_Commands(void)
 {
     PADTYPE * pad = (PADTYPE *)padbuf[0];
 
     if (pad->stat == 0) {
         if ((pad->type == PAD_ID_DIGITAL) || (pad->type == PAD_ID_ANALOG_STICK) || (pad->type == PAD_ID_ANALOG)) {
+            if (!(pad->btn & PAD_R1)) {
+                psx_in_r += 256;
+            }
+            if (!(pad->btn & PAD_R2)) {
+                psx_in_r -= 256;
+            }
+            if (!(pad->btn & PAD_L1)) {
+                psx_in_l += 256;
+            }
+            if (!(pad->btn & PAD_L2)) {
+                psx_in_l -= 256;
+            }
             Key_Event (K_UPARROW, !(pad->btn & PAD_UP));
             Key_Event (K_DOWNARROW, !(pad->btn & PAD_DOWN));
             Key_Event (K_LEFTARROW, !(pad->btn & PAD_LEFT));
