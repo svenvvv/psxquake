@@ -4,7 +4,9 @@ A port of the game Quake to the Playstation 1.
 
 Currently the software renderer is functional, albeit with horrible performance (<1 fps without emulator overlock).
 
-The hardware renderer can draw menus (at 60 fps!), but the world rendering is a bit broken.
+The hardware renderer can draw menus (at 60 fps!) and even the in-game world at a glorious 3 FPS.
+
+![First not-completely-broken HW-rendered screenshot](images/first_hw_bsp.jpg)
 
 No sound, saving, etc.
 
