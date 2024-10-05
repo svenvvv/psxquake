@@ -433,8 +433,6 @@ void R_DrawSequentialPoly (msurface_t *s)
 	float		s1, t1;
 	glRect_t	*theRect;
 
-	return;
-
 	//
 	// normal lightmaped poly
 	//
@@ -707,39 +705,36 @@ void DrawGLWaterPolyLightmap (glpoly_t *p)
 DrawGLPoly
 ================
 */
-void draw_tri(SVECTOR const * a, SVECTOR const * b, SVECTOR const * c, CVECTOR const * color);
-void draw_quad(SVECTOR const a[4], CVECTOR const * color);
+void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
+void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
 
-void DrawGLPoly (glpoly_t *p)
+static inline void loadVerts(SVECTOR & out, float const verts[3])
 {
-	int		i;
-	float	*v;
+	out = { verts[0], verts[1], verts[2] };
+}
 
-	if (p->numverts == 4) {
-		SVECTOR verts[4];
+void DrawGLPoly (glpoly_t *p, int texturenum)
+{
+	SVECTOR verts[4];
+
+	if (p->numverts % 4 == 0) {
 		CVECTOR color = { rand(), rand(), rand() };
-		verts[0] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
-		verts[2] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
-		verts[3] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
-		verts[1] = { p->verts[3][0], p->verts[3][1], p->verts[3][2] };
-		draw_quad(verts, &color);
-	} else if (p->numverts == 3) {
-		SVECTOR verts[3];
-		CVECTOR color = { 255, 0, 0 };
-
-		verts[2] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
-		verts[1] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
-		verts[0] = { p->verts[2][0], p->verts[2][1], p->verts[2][2] };
-		draw_tri(&verts[0], &verts[1], &verts[2], &color);
-	} else {
-		printf("DrawGLPoly ignoring %d\n", (int)p->numverts);
+		for (int off = 0; (p->numverts - off) > 0; off += 4) {
+			loadVerts(verts[0], p->verts[off + 0]);
+			loadVerts(verts[2], p->verts[off + 1]);
+			loadVerts(verts[3], p->verts[off + 2]);
+			loadVerts(verts[1], p->verts[off + 3]);
+			draw_quad(verts, &color);
+		}
+	} else if (p->numverts % 3 == 0) {
+		CVECTOR color = { 128, 128, 0 };
+		for (int off = 0; (p->numverts - off) > 0; off += 3) {
+			loadVerts(verts[2], p->verts[off + 0]);
+			loadVerts(verts[1], p->verts[off + 1]);
+			loadVerts(verts[0], p->verts[off + 2]);
+			draw_tri(verts, &color);
+		}
 	}
-	// v = p->verts[0];
-	// for (i=0 ; i<p->numverts ; i++, v += VERTEXSIZE)
-	// {
-	// 	glTexCoord2f (v[3], v[4]);
-	// 	glVertex3fv (v);
-	// }
 
 	// glBegin (GL_POLYGON);
 	// v = p->verts[0];
@@ -855,7 +850,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 	}
 		
 	t = R_TextureAnimation (fa->texinfo->texture);
-	GL_Bind (t->gl_texturenum);
+	// GL_Bind (t->gl_texturenum);
 
 	if (fa->flags & SURF_DRAWTURB)
 	{	// warp texture, no lightmaps
@@ -866,7 +861,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 	if (fa->flags & SURF_UNDERWATER)
 		DrawGLWaterPoly (fa->polys);
 	else
-		DrawGLPoly (fa->polys);
+		DrawGLPoly (fa->polys, t->gl_texturenum);
 
 	// add the poly to the proper lightmap chain
 
@@ -1195,7 +1190,7 @@ void R_DrawBrushModel (entity_t *e)
 	if (R_CullBox (mins, maxs))
 		return;
 
-	glColor3f (1,1,1);
+	// glColor3f (1,1,1);
 	// memset (lightmap_polys, 0, sizeof(lightmap_polys));
 
 	VectorSubtract (r_refdef.vieworg, e->origin, modelorg);
@@ -1228,10 +1223,13 @@ void R_DrawBrushModel (entity_t *e)
 		}
 	}
 
+// e->angles[0] = -e->angles[0];	// stupid quake bug
     // PushMatrix ();
-e->angles[0] = -e->angles[0];	// stupid quake bug
-	R_RotateForEntity (e);
-e->angles[0] = -e->angles[0];	// stupid quake bug
+	// R_RotateForEntity (e);
+	// gte_SetRotMatrix(&r_base_world_matrix);
+	// gte_SetTransMatrix(&r_base_world_matrix);
+
+// e->angles[0] = -e->angles[0];	// stupid quake bug
 
 	//
 	// draw texture

@@ -239,7 +239,7 @@ void EmitSkyPolys (msurface_t *fa)
 
 	for (p=fa->polys ; p ; p=p->next)
 	{
-		glBegin (GL_POLYGON);
+		// glBegin (GL_POLYGON);
 		for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
 		{
 			VectorSubtract (v, r_origin, dir);
@@ -258,7 +258,7 @@ void EmitSkyPolys (msurface_t *fa)
 			glTexCoord2f (s, t);
 			glVertex3fv (v);
 		}
-		glEnd ();
+		// glEnd ();
 	}
 }
 

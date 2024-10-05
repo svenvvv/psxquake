@@ -160,26 +160,25 @@ void R_RotateForEntity (entity_t *e)
 	MATRIX ent_mtx = { 0 };
 
 	SVECTOR trot = {
-		int(e->angles[2] * 1024) * 90,
-		int(e->angles[0] * 1024) * 90,
-		int(e->angles[1] * 1024) * 90
+		int(e->angles[2] * 1024) / 90,
+		int(e->angles[0] * 1024) / 90,
+		int(e->angles[1] * 1024) / 90,
 	};
 	RotMatrix( &trot, &ent_mtx );
 
 	VECTOR tpos = {
-		float_to_psx(e->origin[0]),
-		float_to_psx(e->origin[1]),
-		float_to_psx(e->origin[2])
+		e->origin[0],
+		e->origin[1],
+		e->origin[2],
 	};
 	TransMatrix(&ent_mtx, &tpos);
 
 	CompMatrixLV(&r_world_matrix, &ent_mtx, &ent_mtx);
 
+	PushMatrix();
+
 	gte_SetRotMatrix(&ent_mtx);
 	gte_SetTransMatrix(&ent_mtx);
-
-	// gte_SetRotMatrix(&ent_mtx);
-	// gte_SetTransMatrix(&ent_mtx);
 
     // glTranslatef (e->origin[0],  e->origin[1],  e->origin[2]);
     //
@@ -397,7 +396,8 @@ int tri_clip(RECT *clip, DVECTOR *v0, DVECTOR *v1, DVECTOR *v2) {
 void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
 {
 	int gv;
-	POLY_F4 * poly = (POLY_F4 *) rb_nextpri;
+	// POLY_F4 * poly = (POLY_F4 *) rb_nextpri;
+	LINE_F4 * poly = (LINE_F4 *) rb_nextpri;
 
 	gte_ldv3(&verts[0], &verts[1], &verts[2]);
 
@@ -408,7 +408,8 @@ void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
 		return;
 	}
 
-	setPolyF4(poly);
+	// setPolyF4(poly);
+	setLineF4(poly);
 
 	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
 
@@ -439,12 +440,18 @@ void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
 	psx_add_prim_z(poly, gv >> 2);
 }
 
-void draw_tri(SVECTOR const * a, SVECTOR const * b, SVECTOR const * c, CVECTOR const * color)
+template <typename T>
+T * psx_nextpri()
+{
+	return (T*)rb_nextpri;
+}
+
+void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
 {
 	int gv;
-	POLY_F3 * poly = (POLY_F3 *) rb_nextpri;
+	auto * poly = psx_nextpri<LINE_F4>();
 
-	gte_ldv3(a, b, c);
+	gte_ldv3(&verts[0], &verts[1], &verts[2]);
 
 	gte_rtpt();
 	gte_nclip();
@@ -495,16 +502,9 @@ GL_DrawAliasFrame
 */
 void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum)
 {
-	float	s, t;
-	float 	l;
-	int		i, j;
-	int		index;
-	trivertx_t	*v, *verts;
-	int		list;
-	int		*order;
-	vec3_t	point;
-	float	*normal;
-	int		count;
+	trivertx_t const * verts;
+	int * order;
+	int count;
 
 	lastposenum = posenum;
 
@@ -530,33 +530,36 @@ void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum)
 			count = -count;
 			// glBegin (GL_TRIANGLE_FAN);
 
-			vertices[0] = byte3_to_svector(verts[0].v);
-			count -= 1;
-			order += 2;
-			verts += 1;
+			vertices[2] = byte3_to_svector(verts[0].v);
+			vertices[1] = byte3_to_svector(verts[1].v);
+			verts += 2;
+			order += 4;
+			count -= 2;
 
-			for (; count > 1; count -= 1 * 2, order += 2 * 2, verts += 1 * 2) {
+			for (; count > 0; count -= 1, verts += 1, order += 2) {
+				// texture coordinates come from the draw list
+				// glTexCoord2f (((float *)order)[0], ((float *)order)[1]);
 				vertices[0] = byte3_to_svector(verts[0].v);
-				vertices[1] = byte3_to_svector(verts[1].v);
-				draw_tri(&vertices[0], &vertices[1], &vertices[2], &color);
+			 	draw_tri(vertices, &color);
+				vertices[1] = vertices[0];
 			}
-
 		} else {
+			printf("TRIANGLE STRIP\n");
+			order += count * 2;
+			continue;
 			// glBegin (GL_TRIANGLE_STRIP);
 			// TODO PSX
-			vertices[0] = byte3_to_svector(verts[0].v);
+			vertices[2] = byte3_to_svector(verts[0].v);
 			count -= 1;
 			order += 2;
 			verts += 1;
 
 			for (; count > 1; count -= 1, order += 2, verts += 1) {
 				vertices[1] = { verts[0].v[0], verts[0].v[1], verts[0].v[2] };
-				vertices[2] = { verts[1].v[0], verts[1].v[1], verts[1].v[2] };
-				draw_tri(&vertices[0], &vertices[1], &vertices[2], &color);
+				vertices[0] = { verts[1].v[0], verts[1].v[1], verts[1].v[2] };
+				draw_tri(vertices, &color);
 			}
 		}
-
-		return;
 
 		// int32_t gv;
 		// do
@@ -823,7 +826,7 @@ void R_DrawAliasModel (entity_t *e)
 	// if (gl_affinemodels.value)
 	// 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-	// PopMatrix ();
+	PopMatrix ();
 
 	// if (r_shadows.value)
 	// {
@@ -953,9 +956,9 @@ void R_DrawViewModel (void)
 	diffuse[0] = diffuse[1] = diffuse[2] = diffuse[3] = (float)shadelight / 128;
 
 	// hack the depth range to prevent view model from poking into walls
-	glDepthRange (gldepthmin, gldepthmin + 0.3*(gldepthmax-gldepthmin));
+	// glDepthRange (gldepthmin, gldepthmin + 0.3*(gldepthmax-gldepthmin));
 	R_DrawAliasModel (currententity);
-	glDepthRange (gldepthmin, gldepthmax);
+	// glDepthRange (gldepthmin, gldepthmax);
 }
 
 
@@ -1161,30 +1164,23 @@ void R_SetupGL (void)
 	// else
 	// 	glCullFace(GL_FRONT);
 
-	// SVECTOR trot = { int16_t(-90), int16_t(0), int16_t(90) };
-	// RotMatrix(&trot, &r_world_matrix);
 	SVECTOR trot = {
-		(int(r_refdef.viewangles[2] * 1024) / 90) - 1024,
-		(int(r_refdef.viewangles[0] * 1024) / 90),
+		(int(r_refdef.viewangles[0] * 1024) / 90) - 1024,
+		(int(r_refdef.viewangles[2] * 1024) / 90),
 		(-int(r_refdef.viewangles[1] * 1024) / 90) + 1024
 	};
 	RotMatrix(&trot, &r_world_matrix);
+
+	VECTOR cam_scale = { 10 * ONE, 10 * ONE, 10 * ONE };
+	ScaleMatrixL(&r_world_matrix, &cam_scale);
 
 	VECTOR tpos = {
 		-r_refdef.vieworg[0],
 		-r_refdef.vieworg[1],
 		-r_refdef.vieworg[2]
 	};
-	printf("tpos %d %d %d => %d %d %d\n",
-		   int(r_refdef.vieworg[0]),
-		   int(r_refdef.vieworg[1]),
-		   int(r_refdef.vieworg[2]),
-		   tpos.vx, tpos.vy, tpos.vz);
-
-	VECTOR cam_scale = { 10 * ONE, 10 * ONE, 10 * ONE };
-	ScaleMatrixL(&r_world_matrix, &cam_scale);
- //
 	ApplyMatrixLV(&r_world_matrix, &tpos, &tpos);
+
 	TransMatrix(&r_world_matrix, &tpos);
 
 	gte_SetRotMatrix(&r_world_matrix);
