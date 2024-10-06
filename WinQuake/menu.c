@@ -1584,45 +1584,15 @@ qboolean	wasInMenus;
 char *quitMessage [] = 
 {
 /* .........1.........2.... */
-  "  Are you gonna quit    ",
-  "  this game just like   ",
-  "   everything else?     ",
-  "                        ",
- 
-  " Milord, methinks that  ",
-  "   thou art a lowly     ",
-  " quitter. Is this true? ",
+  "     You cannot quit    ",
+  "        PSXQuake        ",
+  "   You're here forever  ",
   "                        ",
 
-  " Do I need to bust your ",
-  "  face open for trying  ",
-  "        to quit?        ",
+  "    Thanks for trying   ",
+  "        PSXQuake        ",
+  "   Still can't quit :)  ",
   "                        ",
-
-  " Man, I oughta smack you",
-  "   for trying to quit!  ",
-  "     Press Y to get     ",
-  "      smacked out.      ",
- 
-  " Press Y to quit like a ",
-  "   big loser in life.   ",
-  "  Press N to stay proud ",
-  "    and successful!     ",
- 
-  "   If you press Y to    ",
-  "  quit, I will summon   ",
-  "  Satan all over your   ",
-  "      hard drive!       ",
- 
-  "  Um, Asmodeus dislikes ",
-  " his children trying to ",
-  " quit. Press Y to return",
-  "   to your Tinkertoys.  ",
- 
-  "  If you quit now, I'll ",
-  "  throw a blanket-party ",
-  "   for you next time!   ",
-  "                        "
 };
 #endif
 
@@ -1635,7 +1605,7 @@ void M_Menu_Quit_f (void)
 	m_quit_prevstate = m_state;
 	m_state = m_quit;
 	m_entersound = true;
-	msgNumber = rand()&7;
+	msgNumber = rand() % (ARRAY_SIZE(quitMessage) / 4);
 }
 
 
@@ -1646,6 +1616,8 @@ void M_Quit_Key (int key)
 	case K_ESCAPE:
 	case 'n':
 	case 'N':
+	case 'Y':
+	case 'y':
 		if (wasInMenus)
 		{
 			m_state = m_quit_prevstate;
@@ -1656,12 +1628,6 @@ void M_Quit_Key (int key)
 			key_dest = key_game;
 			m_state = m_none;
 		}
-		break;
-
-	case 'Y':
-	case 'y':
-		key_dest = key_console;
-		Host_Quit_f ();
 		break;
 
 	default:
