@@ -107,8 +107,8 @@ void psx_vram_compact(struct vram_texpage * page)
 	available_rect->h = VRAM_PAGE_HEIGHT;
 
 	psx_vram_rect(
-		available_rect->x + page->rect.x,
-		available_rect->y + page->rect.y,
+		available_rect->x + page->x,
+		available_rect->y + page->y,
 		available_rect->w,
 		available_rect->h
 	);
@@ -151,12 +151,12 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			target_tex->rect.h = h;
 			target_tex->page = page;
 			target_tex->tpage = getTPage(1, 0,
-										(page->rect.x + target_tex->rect.x) / 128 * 128,
-										page->rect.y + target_tex->rect.y);
+										(page->x + target_tex->rect.x) / 128 * 128,
+										page->y + target_tex->rect.y);
 
 			printf("Packed %s (%u) to %i;%i;%i;%i\n",
 				   ident, ident_hash,
-					page->rect.x + available_rect->x, page->rect.y + available_rect->y,
+					page->x + available_rect->x, page->y + available_rect->y,
 					available_rect->w, available_rect->h);
 
 			EnterCriticalSection();
@@ -189,13 +189,6 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 					printf("...right %i;%i;%i;%i\n",
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
-
-					// psx_vram_rect(
-					// 	available_rect->x + page->rect.x,
-					// 	available_rect->y + page->rect.y,
-					// 	available_rect->w,
-					// 	available_rect->h
-					// );
 				}
 
 				// Bottom left-overs
@@ -216,12 +209,6 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 					printf("...bottom %i;%i;%i;%i\n",
 						available_rect->x, available_rect->y,
 						available_rect->w, available_rect->h);
-					// psx_vram_rect(
-					// 	available_rect->x + page->rect.x,
-					// 	available_rect->y + page->rect.y,
-					// 	available_rect->w,
-					// 	available_rect->h
-					// );
 				}
 			}
 
@@ -243,62 +230,37 @@ exit:
 
 void psx_vram_init (void)
 {
-	for (int p = 0; p < ARRAY_SIZE(vram_pages); ++p) {
-		struct vram_texpage * page = &vram_pages[p];
-		page->rect.x = p * VRAM_PAGE_WIDTH;
-		if (page->rect.x >= VRAM_WIDTH) {
-			page->rect.x -= VRAM_WIDTH;
-			page->rect.y = VRAM_PAGE_HEIGHT;
-		} else {
-			page->rect.y = 0;
-		}
-		page->rect.w = VRAM_PAGE_WIDTH;
-		page->rect.h = VRAM_PAGE_HEIGHT;
-		page->textures_count = 0;
+	for (int y = 0; y < 2; ++y) {
+		for (int x = 0; x < 6; ++x) {
+			struct vram_texpage * page = &vram_pages[(y * 6) + x];
+			page->x = (x * VRAM_PAGE_WIDTH) + 256;
+			page->y = y * VRAM_PAGE_HEIGHT;
+			page->textures_count = 0;
 
-		if (page->rect.x < VID_WIDTH) {
-			struct vram_texture * tex = vram_tex_alloc();
-			page->textures[0] = tex;
-			page->textures_count += 1;
-
-			tex->rect.x = 0;
-			tex->rect.y = 0;
-			tex->rect.h = VRAM_PAGE_HEIGHT;
-			tex->rect.w = VRAM_PAGE_WIDTH; // VID_WIDTH - page->rect.x;
-			// tex->rect.w = VID_WIDTH - page->rect.x;
-			// if (tex->rect.w > VRAM_PAGE_WIDTH) {
-			// 	tex->rect.w = VRAM_PAGE_WIDTH;
-			// 	page->available_rects_count = 0;
-			// } else {
-			// 	page->available_rects[0].x = tex->rect.w;
-			// 	page->available_rects[0].y = 0;
-			// 	page->available_rects[0].w = VRAM_PAGE_WIDTH - tex->rect.w;
-			// 	page->available_rects[0].h = VRAM_PAGE_HEIGHT;
-			// 	page->available_rects_count = 1;
-			// }
-   //
-			// printf("TexPage fb init %i;%i %ix%i: used %i;%i %ix%i, avail %i;%i %ix%i\n",
-			// 	page->rect.x, page->rect.y, page->rect.w, page->rect.h,
-			// 	tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h,
-			// 	page->available_rects[0].x, page->available_rects[0].y, page->available_rects[0].w, page->available_rects[0].h);
-		} else {
-			page->available_rects[0].x = 0;
-			page->available_rects[0].y = 0;
-			page->available_rects[0].w = VRAM_PAGE_WIDTH;
-			page->available_rects[0].h = VRAM_PAGE_HEIGHT;
+			page->available_rects[0] = {
+				0, 0,
+				VRAM_PAGE_WIDTH, VRAM_PAGE_HEIGHT
+			};
 			page->available_rects_count = 1;
-
-			printf("TexPage empty init %i;%i %ix%i\n",
-				page->rect.x, page->rect.y, page->rect.w, page->rect.h);
 		}
-
-		psx_vram_rect(
-			page->rect.x,
-			page->rect.y,
-			page->rect.w,
-			page->rect.h
-		);
 	}
 
-	psx_rb_present();
+	// Partially reserved pages (rightmost of fb)
+	int reserved_x = VID_WIDTH % (VRAM_PAGE_WIDTH - 1);
+	vram_pages[0].available_rects[0] = {
+		int16_t(reserved_x),
+		0,
+		int16_t(VRAM_PAGE_WIDTH - reserved_x),
+		VRAM_PAGE_HEIGHT,
+	};
+	vram_pages[6].available_rects[0] = vram_pages[0].available_rects[0];
+
+	for (int i = 0; i < ARRAY_SIZE(vram_pages); ++i) {
+		struct vram_texpage const * page = &vram_pages[i];
+		RECT const * r = &page->available_rects[0];
+		psx_vram_rect(
+			page->x + r->x, page->y + r->y,
+			r->w, r->h
+		);
+	}
 }

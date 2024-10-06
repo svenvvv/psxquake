@@ -13,7 +13,10 @@
 #define VRAM_HEIGHT 512
 #define VRAM_PAGE_WIDTH 128
 #define VRAM_PAGE_HEIGHT 256
-#define VRAM_PAGES ((VRAM_WIDTH / VRAM_PAGE_WIDTH) * (VRAM_HEIGHT / VRAM_PAGE_HEIGHT))
+
+// 4 pages less than actual since the framebuffer covers the entire four pages, so we can't
+// allocate textures on them anyways
+#define VRAM_PAGES (((VRAM_WIDTH / VRAM_PAGE_WIDTH) * (VRAM_HEIGHT / VRAM_PAGE_HEIGHT)) - 4)
 
 #define OT_LEN 		(1 * 1024)
 #define PRIBUF_LEN 	(128 * 1024)
@@ -28,23 +31,36 @@ struct PQRenderBuf
 
 struct vram_texpage
 {
-	RECT rect;
+	/** Page X-coordinate */
+	int16_t x;
+	/** Page Y-coordinate */
+	int16_t y;
+	/** Textures allocated on this page */
 	struct vram_texture * textures[PSX_MAX_VRAM_RECTS / VRAM_PAGES];
+	/** Number of textures allocated on this page */
 	size_t textures_count;
+	/** Unused rectangles on this page */
 	RECT available_rects[PSX_MAX_VRAM_RECTS / VRAM_PAGES];
+	/** Number of unused rectangles on this page */
 	size_t available_rects_count;
 };
 
 struct vram_texture
 {
+	/** Unique identifier of the texture */
 	uint32_t ident;
+	/** Texture index. TODO remove? */
 	uint16_t index;
+	/** Texture rectangle in VRAM */
 	RECT rect;
-    int div;
+	/** Parent texture page */
     struct vram_texpage * page;
-    bool alpha;
+	/** Scale of the output texture in relation to the VRAM texture (we downscale) */
+    int scale;
+	/** Whether the texture contains transparent pixels */
+    bool is_alpha;
+	/** PSX texture page value */
 	uint16_t tpage;
-    bool permanent;
 };
 
 extern uint8_t * rb_nextpri;

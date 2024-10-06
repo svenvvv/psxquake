@@ -568,7 +568,7 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 		tex->rect.h
 	);
 	setRGB0(poly, 128, 128, 128);
-	poly->clut = tex->alpha ? psx_clut_transparent : psx_clut;
+	poly->clut = tex->is_alpha ? psx_clut_transparent : psx_clut;
 	poly->tpage = tex->tpage;
 
 	psx_add_prim(poly, psx_zlevel++);
@@ -1165,13 +1165,13 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	}
 
 	RECT load_rect = tex->rect;
-	load_rect.x += tex->page->rect.x;
-	load_rect.y += tex->page->rect.y;
+	load_rect.x += tex->page->x;
+	load_rect.y += tex->page->y;
 	load_rect.w /= 2;
 
 	LoadImage(&load_rect, (void*)data);
-	tex->div = div;
-	tex->alpha = alpha;
+	tex->scale = div;
+	tex->is_alpha = alpha;
 
 	printf("GL_LoadTexture \"%s\" (%04x) %ix%i\n", identifier, tex->ident, width, height);
 
