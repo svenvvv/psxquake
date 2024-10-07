@@ -706,7 +706,11 @@ DrawGLPoly
 ================
 */
 void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
+void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
+				   struct vram_texture const * tex);
 void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
+void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
+				   struct vram_texture const * tex);
 
 static inline void loadVerts(SVECTOR & out, float const verts[3])
 {
@@ -716,23 +720,46 @@ static inline void loadVerts(SVECTOR & out, float const verts[3])
 void DrawGLPoly (glpoly_t *p, int texturenum)
 {
 	SVECTOR verts[4];
+	uint8_t uv[4 * 2];
+
+	struct vram_texture * tex = psx_vram_get(texturenum);
 
 	if (p->numverts % 4 == 0) {
 		CVECTOR color = { rand(), rand(), rand() };
 		for (int off = 0; (p->numverts - off) > 0; off += 4) {
 			loadVerts(verts[0], p->verts[off + 0]);
+			uv[0] = p->verts[off + 0][3] * tex->rect.w;
+			uv[1] = p->verts[off + 0][4] * tex->rect.h;
+
 			loadVerts(verts[2], p->verts[off + 1]);
+			uv[4] = p->verts[off + 1][3] * tex->rect.w;
+			uv[5] = p->verts[off + 1][4] * tex->rect.h;
+
 			loadVerts(verts[3], p->verts[off + 2]);
+			uv[6] = p->verts[off + 2][3] * tex->rect.w;
+			uv[7] = p->verts[off + 2][4] * tex->rect.h;
+
 			loadVerts(verts[1], p->verts[off + 3]);
-			draw_quad(verts, &color);
+			uv[2] = p->verts[off + 3][3] * tex->rect.w;
+			uv[3] = p->verts[off + 3][4] * tex->rect.h;
+			draw_quad_tex(verts, uv, tex);
 		}
 	} else if (p->numverts % 3 == 0) {
 		CVECTOR color = { 128, 128, 0 };
 		for (int off = 0; (p->numverts - off) > 0; off += 3) {
 			loadVerts(verts[2], p->verts[off + 0]);
+			uv[4] = p->verts[off + 0][3] * tex->rect.w;
+			uv[5] = p->verts[off + 0][4] * tex->rect.h;
+
 			loadVerts(verts[1], p->verts[off + 1]);
+			uv[2] = p->verts[off + 1][3] * tex->rect.w;
+			uv[3] = p->verts[off + 1][4] * tex->rect.h;
+
 			loadVerts(verts[0], p->verts[off + 2]);
-			draw_tri(verts, &color);
+			uv[0] = p->verts[off + 2][3] * tex->rect.w;
+			uv[1] = p->verts[off + 2][4] * tex->rect.h;
+
+			draw_tri_tex(verts, uv, tex);
 		}
 	}
 

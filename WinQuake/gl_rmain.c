@@ -340,57 +340,66 @@ float	*shadedots = r_avertexnormal_dots[0];
 
 int	lastposenum;
 
-#define CLIP_LEFT	1
-#define CLIP_RIGHT	2
-#define CLIP_TOP	4
-#define CLIP_BOTTOM	8
+void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
+				   struct vram_texture const * tex)
+{
+	int gv;
+	POLY_FT4 * poly = (POLY_FT4 *) rb_nextpri;
 
+	gte_ldv3(&verts[0], &verts[1], &verts[2]);
 
-int test_clip(RECT *clip, short x, short y) {
-
-	// Tests which corners of the screen a point lies outside of
-
-	int result = 0;
-
-	if ( x < clip->x ) {
-		result |= CLIP_LEFT;
+	gte_rtpt();
+	gte_nclip();
+	gte_stopz(&gv);
+	if (gv < 0) {
+		return;
 	}
 
-	if ( x >= (clip->x+(clip->w-1)) ) {
-		result |= CLIP_RIGHT;
+	setPolyFT4(poly);
+
+	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+
+	gte_ldv0(&verts[3]);
+	gte_rtps();
+
+	gte_avsz4();
+	gte_stotz(&gv);
+	if ((gv >> 2) > OT_LEN) {
+		return;
 	}
 
-	if ( y < clip->y ) {
-		result |= CLIP_TOP;
-	}
+	gte_stsxy(&poly->x3);
 
-	if ( y >= (clip->y+(clip->h-1)) ) {
-		result |= CLIP_BOTTOM;
-	}
+	// SVECTOR norm = 	{ 0, ONE, 0, 0 };
+	// gte_ldrgb(&(poly->r0));
+	// gte_ldv0(&norm);
+	// gte_ncs();
+	// gte_strgb(&(poly->r0));
 
-	return result;
+	// setUVWH(poly,
+	// 	tex->rect.x * 2,
+	// 	tex->rect.y,
+	// 	tex->rect.w,
+	// 	tex->rect.h
+	// );
+	unsigned uv_tx = tex->rect.x * 2;
+	unsigned uv_ty = tex->rect.y;
+	setUV4(poly,
+		uv_tx + uv[0], uv_ty + uv[1],
+		uv_tx + uv[2], uv_ty + uv[3],
+		uv_tx + uv[4], uv_ty + uv[5],
+		uv_tx + uv[6], uv_ty + uv[7]
+	);
+	poly->tpage = tex->tpage;
+	poly->clut = psx_clut;
 
-}
+	setRGB0(poly, 127, 127, 127);
 
-int tri_clip(RECT *clip, DVECTOR *v0, DVECTOR *v1, DVECTOR *v2) {
+	// printf("tri %d %d %d => %d %d %d\n",
+	// 	  a->v[0], verts->v[1], verts->v[2],
+	// 	   poly->x0, poly->x1, poly->x2);
 
-	// Returns non-zero if a triangle is outside the screen boundaries
-	return 0;
-
-	short c[3];
-
-	c[0] = test_clip(clip, v0->vx, v0->vy);
-	c[1] = test_clip(clip, v1->vx, v1->vy);
-	c[2] = test_clip(clip, v2->vx, v2->vy);
-
-	if ( ( c[0] & c[1] ) == 0 )
-		return 0;
-	if ( ( c[1] & c[2] ) == 0 )
-		return 0;
-	if ( ( c[2] & c[0] ) == 0 )
-		return 0;
-
-	return 1;
+	psx_add_prim_z(poly, gv >> 2);
 }
 
 void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
@@ -446,10 +455,11 @@ T * psx_nextpri()
 	return (T*)rb_nextpri;
 }
 
-void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
+void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
+				  struct vram_texture const * tex)
 {
 	int gv;
-	auto * poly = psx_nextpri<LINE_F4>();
+	auto * poly = psx_nextpri<POLY_FT3>();
 
 	gte_ldv3(&verts[0], &verts[1], &verts[2]);
 
@@ -466,7 +476,57 @@ void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
 		return;
 	}
 
-	setPolyF3(poly);
+	setPolyFT3(poly);
+
+	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+
+	unsigned uv_tx = tex->rect.x * 2;
+	unsigned uv_ty = tex->rect.y;
+	setUV3(poly,
+		uv_tx + uv[0], uv_ty + uv[1],
+		uv_tx + uv[2], uv_ty + uv[3],
+		uv_tx + uv[4], uv_ty + uv[5]
+	);
+	poly->tpage = tex->tpage;
+	poly->clut = psx_clut;
+
+	setRGB0(poly, 127, 127, 127);
+
+	// SVECTOR norm = 	{ 0, -ONE, 0, 0 };
+
+	// gte_ldrgb(&(poly->r0));
+	// gte_ldv0(&norm);
+	// gte_ncs();
+	// gte_strgb(&(poly->r0));
+
+	// printf("tri %d %d %d => %d %d %d\n",
+	// 	  a->v[0], verts->v[1], verts->v[2],
+	// 	   poly->x0, poly->x1, poly->x2);
+
+	psx_add_prim_z(poly, gv >> 2);
+}
+
+void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
+{
+	int gv;
+	auto * poly = psx_nextpri<LINE_F3>();
+
+	gte_ldv3(&verts[0], &verts[1], &verts[2]);
+
+	gte_rtpt();
+	gte_nclip();
+	gte_stopz(&gv);
+	if (gv < 0) {
+		return;
+	}
+
+	gte_avsz3();
+	gte_stotz(&gv);
+	if ((gv >> 2) > OT_LEN) {
+		return;
+	}
+
+	setLineF3(poly);
 
 	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
 
