@@ -160,16 +160,16 @@ void R_RotateForEntity (entity_t *e)
 	MATRIX ent_mtx = { 0 };
 
 	SVECTOR trot = {
-		int(e->angles[2] * 1024) / 90,
-		int(e->angles[0] * 1024) / 90,
-		int(e->angles[1] * 1024) / 90,
+		int16_t(int(e->angles[2] * 1024) / 90),
+		int16_t(int(e->angles[0] * 1024) / 90),
+		int16_t(int(e->angles[1] * 1024) / 90),
 	};
 	RotMatrix( &trot, &ent_mtx );
 
 	VECTOR tpos = {
-		e->origin[0],
-		e->origin[1],
-		e->origin[2],
+		int32_t(e->origin[0]),
+		int32_t(e->origin[1]),
+		int32_t(e->origin[2]),
 	};
 	TransMatrix(&ent_mtx, &tpos);
 
@@ -546,7 +546,7 @@ void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
 	psx_add_prim_z(poly, gv >> 2);
 }
 
-SVECTOR byte3_to_svector(uint8_t byte[3])
+SVECTOR byte3_to_svector(uint8_t const byte[3])
 {
 	return {
 		byte[0],
@@ -1225,9 +1225,9 @@ void R_SetupGL (void)
 	// 	glCullFace(GL_FRONT);
 
 	SVECTOR trot = {
-		(int(r_refdef.viewangles[0] * 1024) / 90) - 1024,
-		(int(r_refdef.viewangles[2] * 1024) / 90),
-		(-int(r_refdef.viewangles[1] * 1024) / 90) + 1024
+		int16_t((int(r_refdef.viewangles[0] * 1024) / 90) - 1024),
+		int16_t((int(r_refdef.viewangles[2] * 1024) / 90)),
+		int16_t((-int(r_refdef.viewangles[1] * 1024) / 90) + 1024)
 	};
 	RotMatrix(&trot, &r_world_matrix);
 
@@ -1235,9 +1235,9 @@ void R_SetupGL (void)
 	ScaleMatrixL(&r_world_matrix, &cam_scale);
 
 	VECTOR tpos = {
-		-r_refdef.vieworg[0],
-		-r_refdef.vieworg[1],
-		-r_refdef.vieworg[2]
+		-int32_t(r_refdef.vieworg[0]),
+		-int32_t(r_refdef.vieworg[1]),
+		-int32_t(r_refdef.vieworg[2])
 	};
 	ApplyMatrixLV(&r_world_matrix, &tpos, &tpos);
 

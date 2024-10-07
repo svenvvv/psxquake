@@ -168,7 +168,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 		
 // copy the value off, because future sets will Z_Free it
 	oldstr = variable->string;
-	variable->string = Z_Malloc (Q_strlen(variable->string)+1);	
+	variable->string = (char*) Z_Malloc (Q_strlen(variable->string)+1);
 	Q_strcpy (variable->string, oldstr);
 	variable->value = Q_atof (variable->string);
 

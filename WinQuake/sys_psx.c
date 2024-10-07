@@ -203,7 +203,7 @@ int Sys_FileOpenWrite(char * path)
 	return 0;
 }
 
-int Sys_FileWrite(int handle, void * src, int count)
+int Sys_FileWrite(int handle, void const * src, int count)
 {
 	printf("Sys_FileWrite\n", count);
     // return write(handle, src, count);

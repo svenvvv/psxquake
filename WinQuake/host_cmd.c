@@ -641,7 +641,7 @@ void Host_Loadgame_f (void)
 	for (i=0 ; i<MAX_LIGHTSTYLES ; i++)
 	{
 		fscanf (f, "%s\n", str);
-		sv.lightstyles[i] = Hunk_Alloc (strlen(str)+1);
+		sv.lightstyles[i] = (char*) Hunk_Alloc (strlen(str)+1);
 		strcpy (sv.lightstyles[i], str);
 	}
 
@@ -949,7 +949,7 @@ void Host_Name_f (void)
 void Host_Version_f (void)
 {
 	Con_Printf ("Version %4.2f\n", VERSION);
-	Con_Printf ("Exe: "__TIME__" "__DATE__"\n");
+	Con_Printf ("Exe: "__TIME__ " " __DATE__ "\n");
 }
 
 #ifdef IDGODS
@@ -1043,11 +1043,11 @@ void Host_Say(qboolean teamonly)
 
 // turn on color set 1
 	if (!fromServer)
-		sprintf (text, "%c%s: ", 1, save->name);
+		sprintf ((char*) text, "%c%s: ", 1, save->name);
 	else
-		sprintf (text, "%c<%s> ", 1, hostname.string);
+		sprintf ((char*) text, "%c<%s> ", 1, hostname.string);
 
-	j = sizeof(text) - 2 - Q_strlen(text);  // -2 for /n and null terminator
+	j = sizeof(text) - 2 - Q_strlen((char*) text);  // -2 for /n and null terminator
 	if (Q_strlen(p) > j)
 		p[j] = 0;
 

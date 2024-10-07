@@ -433,6 +433,9 @@ void R_DrawSequentialPoly (msurface_t *s)
 	float		s1, t1;
 	glRect_t	*theRect;
 
+	// TODO broken PSX
+	return;
+
 	//
 	// normal lightmaped poly
 	//
@@ -490,7 +493,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 			// }
 			// glEnd ();
 
-			POLY_FT3 * poly = (void*)rb_nextpri;
+			POLY_FT3 * poly = (POLY_FT3*)rb_nextpri;
 
 			v = p->verts[0];
 			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
@@ -498,7 +501,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 				// glTexCoord2f (v[5], v[6]);
 				// glVertex3fv (v);
 				int32_t gv;
-				SVECTOR vertices[3] = { v[0], v[1], v[2] };
+				SVECTOR vertices[3] = { int16_t(v[0]), int16_t(v[1]), int16_t(v[2]) };
 
 				gte_ldv3(
 					&vertices[0],
@@ -714,18 +717,18 @@ void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 
 static inline void loadVerts(SVECTOR & out, float const verts[3])
 {
-	out = { verts[0], verts[1], verts[2] };
+	out = { int16_t(verts[0]), int16_t(verts[1]), int16_t(verts[2]) };
 }
 
 void DrawGLPoly (glpoly_t *p, int texturenum)
 {
 	SVECTOR verts[4];
 	uint8_t uv[4 * 2];
+	CVECTOR color = { uint8_t(rand()), uint8_t(rand()), uint8_t(rand()) };
 
 	struct vram_texture * tex = psx_vram_get(texturenum);
 
 	if (p->numverts % 4 == 0) {
-		CVECTOR color = { rand(), rand(), rand() };
 		for (int off = 0; (p->numverts - off) > 0; off += 4) {
 			loadVerts(verts[0], p->verts[off + 0]);
 			uv[0] = p->verts[off + 0][3] * tex->rect.w;
@@ -745,7 +748,6 @@ void DrawGLPoly (glpoly_t *p, int texturenum)
 			draw_quad_tex(verts, uv, tex);
 		}
 	} else if (p->numverts % 3 == 0) {
-		CVECTOR color = { 128, 128, 0 };
 		for (int off = 0; (p->numverts - off) > 0; off += 3) {
 			loadVerts(verts[2], p->verts[off + 0]);
 			uv[4] = p->verts[off + 0][3] * tex->rect.w;
@@ -1586,7 +1588,7 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 	//
 	// draw texture
 	//
-	poly = Hunk_Alloc (sizeof(glpoly_t) + (lnumverts-4) * VERTEXSIZE*sizeof(float));
+	poly = (glpoly_t*) Hunk_Alloc (sizeof(glpoly_t) + (lnumverts-4) * VERTEXSIZE*sizeof(float));
 	poly->next = fa->polys;
 	poly->flags = fa->flags;
 	fa->polys = poly;

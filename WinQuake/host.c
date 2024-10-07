@@ -446,7 +446,7 @@ void Host_ShutdownServer(qboolean crash)
 	while (count);
 
 // make sure all the clients know we're disconnecting
-	buf.data = (char*) message;
+	buf.data = (byte*) message;
 	buf.maxsize = 4;
 	buf.cursize = 0;
 	MSG_WriteByte(&buf, svc_disconnect);
@@ -788,12 +788,12 @@ void Host_InitVCR (quakeparms_t *parms)
 			Sys_Error("Invalid signature in vcr file\n");
 
 		Sys_FileRead (vcrFile, &com_argc, sizeof(int));
-		com_argv = malloc(com_argc * sizeof(char *));
+		com_argv = (char**) malloc(com_argc * sizeof(char *));
 		com_argv[0] = parms->argv[0];
 		for (i = 0; i < com_argc; i++)
 		{
 			Sys_FileRead (vcrFile, &len, sizeof(int));
-			p = malloc(len);
+			p = (char*) malloc(len);
 			Sys_FileRead (vcrFile, p, len);
 			com_argv[i+1] = p;
 		}
@@ -880,7 +880,7 @@ void Host_Init (quakeparms_t *parms)
 	NET_Init ();
 	SV_Init ();
 
-	Con_Printf ("Exe: "__TIME__" "__DATE__"\n");
+	Con_Printf ("Exe: " __TIME__ " " __DATE__ "\n");
 	Con_Printf ("%u megabyte heap\n",parms->memsize / (1024*1024));
 	
 	R_InitTextures ();		// needed even for dedicated servers
