@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int 		con_linewidth;
 
-float		con_cursorspeed = 4;
+unsigned		con_cursorspeed = 400;
 
 #define		CON_TEXTSIZE	16384
 
@@ -47,7 +47,7 @@ char		*con_text=0;
 cvar_t		con_notifytime = {"con_notifytime","3"};		//seconds
 
 #define	NUM_CON_TIMES 4
-float		con_times[NUM_CON_TIMES];	// realtime time the line was generated
+uint32_t		con_times[NUM_CON_TIMES];	// realtime time the line was generated
 								// for transparent notify lines
 
 int			con_vislines;
@@ -489,7 +489,7 @@ void Con_DrawInput (void)
 	text = key_lines[edit_line];
 	
 // add the cursor frame
-	text[key_linepos] = 10+((int)(realtime*con_cursorspeed)&1);
+	text[key_linepos] = 10 + ((realtime / con_cursorspeed)&1);
 	
 // fill out remainder with spaces
 	for (i=key_linepos+1 ; i< con_linewidth ; i++)
@@ -522,7 +522,7 @@ void Con_DrawNotify (void)
 	int		x, v;
 	char	*text;
 	int		i;
-	float	time;
+	uint32_t	time;
 	extern char chat_buffer[];
 
 	v = 0;
@@ -531,10 +531,10 @@ void Con_DrawNotify (void)
 		if (i < 0)
 			continue;
 		time = con_times[i % NUM_CON_TIMES];
-		if (time == 0)
+		if ((time / MS_PER_S) == 0)
 			continue;
 		time = realtime - time;
-		if (time > con_notifytime.value)
+		if ((time / MS_PER_S) > con_notifytime.value)
 			continue;
 		text = con_text + (i % con_totallines)*con_linewidth;
 		
@@ -561,7 +561,7 @@ void Con_DrawNotify (void)
 			Draw_Character ( (x+5)<<3, v, chat_buffer[x]);
 			x++;
 		}
-		Draw_Character ( (x+5)<<3, v, 10+((int)(realtime*con_cursorspeed)&1));
+		Draw_Character ( (x+5)<<3, v, 10+((int)(realtime/con_cursorspeed)&1));
 		v += 8;
 	}
 	
@@ -620,7 +620,7 @@ Con_NotifyBox
 */
 void Con_NotifyBox (char *text)
 {
-	double		t1, t2;
+	uint32_t		t1, t2;
 
 // during startup for sound / cd warnings
 	Con_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
@@ -635,11 +635,11 @@ void Con_NotifyBox (char *text)
 
 	do
 	{
-		t1 = Sys_FloatTime ();
+		t1 = Sys_MilliTime ();
 		SCR_UpdateScreen ();
 		Sys_SendKeyEvents ();
-		t2 = Sys_FloatTime ();
-		realtime += t2-t1;		// make the cursor blink
+		t2 = Sys_MilliTime ();
+		realtime += (t2 - t1) / MS_PER_S;		// make the cursor blink
 	} while (key_count < 0);
 
 	Con_Printf ("\n");

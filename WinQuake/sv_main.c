@@ -727,7 +727,7 @@ qboolean SV_SendClientDatagram (client_t *client)
 	msg.cursize = 0;
 
 	MSG_WriteByte (&msg, svc_time);
-	MSG_WriteFloat (&msg, sv.time);
+	MSG_WriteFloat (&msg, sv.time / (float)MS_PER_S);
 
 // add the client specific data to the datagram
 	SV_WriteClientdataToMessage (client->edict, &msg);
@@ -843,7 +843,7 @@ void SV_SendClientMessages (void)
 		// between signon stages
 			if (!host_client->sendsignon)
 			{
-				if (realtime - host_client->last_message > 5)
+				if (realtime - host_client->last_message > 5000)
 					SV_SendNop (host_client);
 				continue;	// don't send out non-signon messages
 			}
@@ -993,7 +993,7 @@ void SV_SendReconnect (void)
 
 	MSG_WriteChar (&msg, svc_stufftext);
 	MSG_WriteString (&msg, "reconnect\n");
-	NET_SendToAll (&msg, 5);
+	NET_SendToAll (&msg, 5000);
 	
 	if (cls.state != ca_dedicated)
 #ifdef QUAKE2
@@ -1039,7 +1039,7 @@ SV_SpawnServer
 This is called at the start of each level
 ================
 */
-extern float		scr_centertime_off;
+extern uint32_t		scr_centertime_off;
 
 #ifdef QUAKE2
 void SV_SpawnServer (char *server, char *startspot)
@@ -1123,7 +1123,7 @@ void SV_SpawnServer (char *server)
 	sv.state = ss_loading;
 	sv.paused = false;
 
-	sv.time = 1.0;
+	sv.time = 1000;
 	
 	strcpy (sv.name, server);
 	sprintf (sv.modelname,"maps/%s.bsp", server);
@@ -1183,7 +1183,7 @@ void SV_SpawnServer (char *server)
 	sv.state = ss_active;
 	
 // run two frames to allow everything to settle
-	host_frametime = 0.1;
+	host_frametime = 100;
 	SV_Physics ();
 	SV_Physics ();
 

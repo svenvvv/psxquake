@@ -23,6 +23,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // file IO
 //
 
+#define MS_PER_S 1000U
+
 // returns the file size
 // return -1 if file is not present
 // the file should be in BINARY mode for stupid OSs that care
@@ -54,7 +56,7 @@ void Sys_Printf (char *fmt, ...);
 
 void Sys_Quit (void);
 
-double Sys_FloatTime (void);
+uint32_t Sys_MilliTime (void);
 
 char *Sys_ConsoleInput (void);
 

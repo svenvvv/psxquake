@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void		*colormap;
 vec3_t		viewlightvec;
 alight_t	r_viewlighting = {128, 192, viewlightvec};
-float		r_time1;
+uint32_t		r_time1;
 int			r_numallocatededges;
 qboolean	r_drawpolys;
 qboolean	r_drawculledpolys;
@@ -110,8 +110,8 @@ float		r_aliastransition, r_resfudge;
 
 int		d_lightstylevalue[256];	// 8.8 fraction of base light value
 
-float	dp_time1, dp_time2, db_time1, db_time2, rw_time1, rw_time2;
-float	se_time1, se_time2, de_time1, de_time2, dv_time1, dv_time2;
+uint32_t	dp_time1, dp_time2, db_time1, db_time2, rw_time1, rw_time2;
+uint32_t	se_time1, se_time2, de_time1, de_time2, dv_time1, dv_time2;
 
 void R_MarkLeaves (void);
 
@@ -905,7 +905,7 @@ void R_EdgeDrawing (void)
 
 	if (r_dspeeds.value)
 	{
-		rw_time1 = Sys_FloatTime ();
+		rw_time1 = Sys_MilliTime ();
 	}
 
 	R_RenderWorld ();
@@ -919,7 +919,7 @@ void R_EdgeDrawing (void)
 
 	if (r_dspeeds.value)
 	{
-		rw_time2 = Sys_FloatTime ();
+		rw_time2 = Sys_MilliTime ();
 		db_time1 = rw_time2;
 	}
 
@@ -927,7 +927,7 @@ void R_EdgeDrawing (void)
 
 	if (r_dspeeds.value)
 	{
-		db_time2 = Sys_FloatTime ();
+		db_time2 = Sys_MilliTime ();
 		se_time1 = db_time2;
 	}
 
@@ -957,7 +957,7 @@ void R_RenderView_ (void)
 	r_warpbuffer = warpbuffer;
 
 	if (r_timegraph.value || r_speeds.value || r_dspeeds.value)
-		r_time1 = Sys_FloatTime ();
+		r_time1 = Sys_MilliTime ();
 
 	R_SetupFrame ();
 
@@ -994,7 +994,7 @@ SetVisibilityByPassages ();
 	
 	if (r_dspeeds.value)
 	{
-		se_time2 = Sys_FloatTime ();
+		se_time2 = Sys_MilliTime ();
 		de_time1 = se_time2;
 	}
 
@@ -1002,7 +1002,7 @@ SetVisibilityByPassages ();
 
 	if (r_dspeeds.value)
 	{
-		de_time2 = Sys_FloatTime ();
+		de_time2 = Sys_MilliTime ();
 		dv_time1 = de_time2;
 	}
 
@@ -1010,14 +1010,14 @@ SetVisibilityByPassages ();
 
 	if (r_dspeeds.value)
 	{
-		dv_time2 = Sys_FloatTime ();
-		dp_time1 = Sys_FloatTime ();
+		dv_time2 = Sys_MilliTime ();
+		dp_time1 = Sys_MilliTime ();
 	}
 
 	R_DrawParticles ();
 
 	if (r_dspeeds.value)
-		dp_time2 = Sys_FloatTime ();
+		dp_time2 = Sys_MilliTime ();
 
 	if (r_dowarp)
 		D_WarpScreen ();

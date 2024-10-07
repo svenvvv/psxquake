@@ -287,6 +287,10 @@ void M_Menu_Main_f (void)
 	m_entersound = true;
 }
 
+static inline int get_menudot_position(void)
+{
+	return (host_time / 100) % 6;
+}
 
 void M_Main_Draw (void)
 {
@@ -298,7 +302,7 @@ void M_Main_Draw (void)
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mainmenu.lmp") );
 
-	f = (int)(host_time * 10)%6;
+	f = get_menudot_position();
 
 	M_DrawTransPic (54, 32 + m_main_cursor * 20,Draw_CachePic( va("gfx/menudot%i.lmp", f+1 ) ) );
 }
@@ -381,7 +385,7 @@ void M_SinglePlayer_Draw (void)
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/sp_menu.lmp") );
 
-	f = (int)(host_time * 10)%6;
+	f = get_menudot_position();
 
 	M_DrawTransPic (54, 32 + m_singleplayer_cursor * 20,Draw_CachePic( va("gfx/menudot%i.lmp", f+1 ) ) );
 }
@@ -626,7 +630,7 @@ void M_MultiPlayer_Draw (void)
 	M_DrawPic ( (320-p->width)/2, 4, p);
 	M_DrawTransPic (72, 32, Draw_CachePic ("gfx/mp_menu.lmp") );
 
-	f = (int)(host_time * 10)%6;
+	f = get_menudot_position();
 
 	M_DrawTransPic (54, 32 + m_multiplayer_cursor * 20,Draw_CachePic( va("gfx/menudot%i.lmp", f+1 ) ) );
 
@@ -970,7 +974,7 @@ void M_Net_Draw (void)
 	M_Print (f, 158, net_helpMessage[m_net_cursor*4+2]);
 	M_Print (f, 166, net_helpMessage[m_net_cursor*4+3]);
 
-	f = (int)(host_time * 10)%6;
+	f = get_menudot_position();
 	M_DrawTransPic (54, 32 + m_net_cursor * 20,Draw_CachePic( va("gfx/menudot%i.lmp", f+1 ) ) );
 }
 
@@ -2493,7 +2497,7 @@ int	startepisode;
 int	startlevel;
 int maxplayers;
 qboolean m_serverInfoMessage = false;
-double m_serverInfoMessageTime;
+uint32_t m_serverInfoMessageTime;
 
 void M_Menu_GameOptions_f (void)
 {
@@ -2618,7 +2622,7 @@ void M_GameOptions_Draw (void)
 
 	if (m_serverInfoMessage)
 	{
-		if ((realtime - m_serverInfoMessageTime) < 5.0)
+		if ((realtime - m_serverInfoMessageTime) < 5000)
 		{
 			x = (320-26*8)/2;
 			M_DrawTextBox (x, 138, 24, 4);
@@ -2803,7 +2807,7 @@ void M_GameOptions_Key (int key)
 /* SEARCH MENU */
 
 qboolean	searchComplete = false;
-double		searchCompleteTime;
+uint32_t	searchCompleteTime;
 
 void M_Menu_Search_f (void)
 {
@@ -2848,7 +2852,7 @@ void M_Search_Draw (void)
 	}
 
 	M_PrintWhite ((320/2) - ((22*8)/2), 64, "No Quake servers found");
-	if ((realtime - searchCompleteTime) < 3.0)
+	if ((realtime - searchCompleteTime) < 3000)
 		return;
 
 	M_Menu_LanConfig_f ();

@@ -692,7 +692,7 @@ void Host_Loadgame_f (void)
 	}
 	
 	sv.num_edicts = entnum;
-	sv.time = time;
+	sv.time = time * MS_PER_S;
 
 	fclose (f);
 
@@ -732,7 +732,7 @@ void SaveGamestate()
 //		fprintf (f, "%f\n", svs.clients->spawn_parms[i]);
 	fprintf (f, "%f\n", skill.value);
 	fprintf (f, "%s\n", sv.name);
-	fprintf (f, "%f\n", sv.time);
+	fprintf (f, "%f\n", (float)sv.time / (float)MS_PER_S);
 
 // write the light styles
 
@@ -852,7 +852,7 @@ int LoadGamestate(char *level, char *startspot)
 	}
 	
 //	sv.num_edicts = entnum;
-	sv.time = time;
+	sv.time = time * MS_PER_S;
 	fclose (f);
 
 //	for (i=0 ; i<NUM_SPAWN_PARMS ; i++)
@@ -949,7 +949,7 @@ void Host_Name_f (void)
 void Host_Version_f (void)
 {
 	Con_Printf ("Version %4.2f\n", VERSION);
-	Con_Printf ("Exe: "__TIME__ " " __DATE__ "\n");
+	Con_Printf ("Exe: " __TIME__  " "  __DATE__ "\n");
 }
 
 #ifdef IDGODS
@@ -1203,7 +1203,7 @@ void Host_Kill_f (void)
 		return;
 	}
 	
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / (float)MS_PER_S;
 	pr_global_struct->self = EDICT_TO_PROG(sv_player);
 	PR_ExecuteProgram (pr_global_struct->ClientKill);
 }
@@ -1317,11 +1317,11 @@ void Host_Spawn_f (void)
 
 		// call the spawn function
 
-		pr_global_struct->time = sv.time;
+		pr_global_struct->time = sv.time / (float)MS_PER_S;
 		pr_global_struct->self = EDICT_TO_PROG(sv_player);
 		PR_ExecuteProgram (pr_global_struct->ClientConnect);
 
-		if ((Sys_FloatTime() - host_client->netconnection->connecttime) <= sv.time)
+		if ((Sys_MilliTime() - host_client->netconnection->connecttime) <= sv.time)
 			Sys_Printf ("%s entered the game\n", host_client->name);
 
 		PR_ExecuteProgram (pr_global_struct->PutClientInServer);	
@@ -1333,7 +1333,7 @@ void Host_Spawn_f (void)
 
 // send time of update
 	MSG_WriteByte (&host_client->message, svc_time);
-	MSG_WriteFloat (&host_client->message, sv.time);
+	MSG_WriteFloat (&host_client->message, sv.time / MS_PER_S);
 
 	for (i=0, client = svs.clients ; i<svs.maxclients ; i++, client++)
 	{

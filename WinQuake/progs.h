@@ -42,7 +42,7 @@ typedef struct edict_s
 
 	entity_state_t	baseline;
 	
-	float		freetime;			// sv.time when the object was freed
+	uint32_t	freetime;			// sv.time when the object was freed
 	entvars_t	v;					// C exported fields from progs
 // other fields from progs come immediately after
 } edict_t;

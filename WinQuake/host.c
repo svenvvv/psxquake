@@ -37,10 +37,10 @@ quakeparms_t host_parms;
 
 qboolean	host_initialized;		// true if into command execution
 
-double		host_frametime;
-double		host_time;
-double		realtime;				// without any filtering or bounding
-double		oldrealtime;			// last frame run
+uint32_t	host_frametime;
+uint32_t	host_time;
+uint32_t	realtime;				// without any filtering or bounding
+uint32_t	oldrealtime;			// last frame run
 int			host_framecount;
 
 int			host_hunklevel;
@@ -232,7 +232,7 @@ void Host_InitLocal (void)
 
 	Host_FindMaxClients ();
 	
-	host_time = 1.0;		// so a think at time 0 won't get called
+	host_time = 1000;		// so a think at time 0 won't get called
 }
 
 
@@ -408,7 +408,7 @@ void Host_ShutdownServer(qboolean crash)
 	int		count;
 	sizebuf_t	buf;
 	char		message[4];
-	double	start;
+	uint32_t	start;
 
 	if (!sv.active)
 		return;
@@ -420,7 +420,7 @@ void Host_ShutdownServer(qboolean crash)
 		CL_Disconnect ();
 
 // flush any pending messages - like the score!!!
-	start = Sys_FloatTime();
+	start = Sys_MilliTime();
 	do
 	{
 		count = 0;
@@ -440,7 +440,7 @@ void Host_ShutdownServer(qboolean crash)
 				}
 			}
 		}
-		if ((Sys_FloatTime() - start) > 3.0)
+		if ((Sys_MilliTime() - start) > 3 * MS_PER_S)
 			break;
 	}
 	while (count);
@@ -450,7 +450,7 @@ void Host_ShutdownServer(qboolean crash)
 	buf.maxsize = 4;
 	buf.cursize = 0;
 	MSG_WriteByte(&buf, svc_disconnect);
-	count = NET_SendToAll(&buf, 5);
+	count = NET_SendToAll(&buf, 5000);
 	if (count)
 		Con_Printf("Host_ShutdownServer: NET_SendToAll failed for %u clients\n", count);
 
@@ -498,11 +498,11 @@ Host_FilterTime
 Returns false if the time is too short to run a frame
 ===================
 */
-qboolean Host_FilterTime (float time)
+qboolean Host_FilterTime (uint32_t time)
 {
 	realtime += time;
 
-	if (!cls.timedemo && realtime - oldrealtime < 1.0/72.0)
+	if (!cls.timedemo && realtime - oldrealtime < 1000/72)
 		return false;		// framerate is too high
 
 	host_frametime = realtime - oldrealtime;
@@ -512,10 +512,10 @@ qboolean Host_FilterTime (float time)
 		host_frametime = host_framerate.value;
 	else
 	{	// don't allow really long or short frames
-		if (host_frametime > 0.1)
-			host_frametime = 0.1;
-		if (host_frametime < 0.001)
-			host_frametime = 0.001;
+		if (host_frametime > 100)
+			host_frametime = 100;
+		if (host_frametime < 10)
+			host_frametime = 10;
 	}
 	
 	return true;
@@ -554,7 +554,7 @@ Host_ServerFrame
 void _Host_ServerFrame (void)
 {
 // run the world state	
-	pr_global_struct->frametime = host_frametime;
+	pr_global_struct->frametime = host_frametime / (float)MS_PER_S;
 
 // read client messages
 	SV_RunClients ();
@@ -567,11 +567,11 @@ void _Host_ServerFrame (void)
 
 void Host_ServerFrame (void)
 {
-	float	save_host_frametime;
-	float	temp_host_frametime;
+	uint32_t	save_host_frametime;
+	uint32_t	temp_host_frametime;
 
 // run the world state	
-	pr_global_struct->frametime = host_frametime;
+	pr_global_struct->frametime = host_frametime / (float)MS_PER_S;
 
 // set the time and clear the general datagram
 	SV_ClearDatagram ();
@@ -580,10 +580,10 @@ void Host_ServerFrame (void)
 	SV_CheckForNewClients ();
 
 	temp_host_frametime = save_host_frametime = host_frametime;
-	while(temp_host_frametime > (1.0/72.0))
+	while(temp_host_frametime > 14)
 	{
-		if (temp_host_frametime > 0.05)
-			host_frametime = 0.05;
+		if (temp_host_frametime > 50)
+			host_frametime = 50;
 		else
 			host_frametime = temp_host_frametime;
 		temp_host_frametime -= host_frametime;
@@ -600,7 +600,7 @@ void Host_ServerFrame (void)
 void Host_ServerFrame (void)
 {
 // run the world state	
-	pr_global_struct->frametime = host_frametime;
+	pr_global_struct->frametime = host_frametime / (float)MS_PER_S;
 
 // set the time and clear the general datagram
 	SV_ClearDatagram ();
@@ -630,11 +630,11 @@ Host_Frame
 Runs all active servers
 ==================
 */
-void _Host_Frame (float time)
+void Host_Frame (uint32_t time)
 {
-	static double		time1 = 0;
-	static double		time2 = 0;
-	static double		time3 = 0;
+	static uint32_t	time1 = 0;
+	static uint32_t	time2 = 0;
+	static uint32_t	time3 = 0;
 	int			pass1, pass2, pass3;
 
 	if (setjmp (host_abortserver) )
@@ -695,12 +695,12 @@ void _Host_Frame (float time)
 
 // update video
 	if (host_speeds.value)
-		time1 = Sys_FloatTime ();
+		time1 = Sys_MilliTime ();
 		
 	SCR_UpdateScreen ();
 
 	if (host_speeds.value)
-		time2 = Sys_FloatTime ();
+		time2 = Sys_MilliTime ();
 		
 // update audio
 	if (cls.signon == SIGNONS)
@@ -715,10 +715,10 @@ void _Host_Frame (float time)
 
 	if (host_speeds.value)
 	{
-		pass1 = (time1 - time3)*1000;
-		time3 = Sys_FloatTime ();
-		pass2 = (time2 - time1)*1000;
-		pass3 = (time3 - time2)*1000;
+		pass1 = (time1 - time3);
+		time3 = Sys_MilliTime ();
+		pass2 = (time2 - time1);
+		pass3 = (time3 - time2);
 		Con_Printf ("%3i tot %3i server %3i gfx %3i snd\n",
 					pass1+pass2+pass3, pass1, pass2, pass3);
 	}
@@ -726,10 +726,11 @@ void _Host_Frame (float time)
 	host_framecount++;
 }
 
-void Host_Frame (float time)
+#if 0
+void Host_Frame (uint32_t time)
 {
-	double	time1, time2;
-	static double	timetotal;
+	uint32_t	time1, time2;
+	static uint32_t	timetotal;
 	static int		timecount;
 	int		i, c, m;
 
@@ -739,9 +740,9 @@ void Host_Frame (float time)
 		return;
 	}
 	
-	time1 = Sys_FloatTime ();
+	time1 = Sys_MilliTime ();
 	_Host_Frame (time);
-	time2 = Sys_FloatTime ();	
+	time2 = Sys_MilliTime ();
 	
 	timetotal += time2 - time1;
 	timecount++;
@@ -749,7 +750,7 @@ void Host_Frame (float time)
 	if (timecount < 1000)
 		return;
 
-	m = timetotal*1000/timecount;
+	m = timetotal/timecount;
 	timecount = 0;
 	timetotal = 0;
 	c = 0;
@@ -761,6 +762,7 @@ void Host_Frame (float time)
 
 	Con_Printf ("serverprofile: %2i clients %2i msec\n",  c,  m);
 }
+#endif
 
 //============================================================================
 

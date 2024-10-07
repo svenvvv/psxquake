@@ -125,9 +125,9 @@ Returns false if the entity removed itself.
 */
 qboolean SV_RunThink (edict_t *ent)
 {
-	float	thinktime;
+	int32_t	thinktime;
 
-	thinktime = ent->v.nextthink;
+	thinktime = ent->v.nextthink * MS_PER_S;
 	if (thinktime <= 0 || thinktime > sv.time + host_frametime)
 		return true;
 		
@@ -136,7 +136,7 @@ qboolean SV_RunThink (edict_t *ent)
 								// it is possible to start that way
 								// by a trigger with a local time.
 	ent->v.nextthink = 0;
-	pr_global_struct->time = thinktime;
+	pr_global_struct->time = thinktime / (float)MS_PER_S;
 	pr_global_struct->self = EDICT_TO_PROG(ent);
 	pr_global_struct->other = EDICT_TO_PROG(sv.edicts);
 	PR_ExecuteProgram (ent->v.think);
@@ -157,7 +157,7 @@ void SV_Impact (edict_t *e1, edict_t *e2)
 	old_self = pr_global_struct->self;
 	old_other = pr_global_struct->other;
 	
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / (float)MS_PER_S;
 	if (e1->v.touch && e1->v.solid != SOLID_NOT)
 	{
 		pr_global_struct->self = EDICT_TO_PROG(e1);
@@ -226,7 +226,7 @@ If steptrace is not NULL, the trace of any vertical wall hit will be stored
 ============
 */
 #define	MAX_CLIP_PLANES	5
-int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
+int SV_FlyMove (edict_t *ent, uint32_t time, trace_t *steptrace)
 {
 	int			bumpcount, numbumps;
 	vec3_t		dir;
@@ -237,7 +237,7 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 	int			i, j;
 	trace_t		trace;
 	vec3_t		end;
-	float		time_left;
+	int32_t		time_left;
 	int			blocked;
 	
 	numbumps = 4;
@@ -255,7 +255,7 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 			break;
 
 		for (i=0 ; i<3 ; i++)
-			end[i] = ent->v.origin[i] + time_left * ent->v.velocity[i];
+			end[i] = ent->v.origin[i] + (time_left * ent->v.velocity[i]) / MS_PER_S;
 
 		trace = SV_Move (ent->v.origin, ent->v.mins, ent->v.maxs, end, false, ent);
 
@@ -302,7 +302,7 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace)
 			break;		// removed by the impact function
 
 		
-		time_left -= time_left * trace.fraction;
+		time_left -= (time_left * trace.fraction) / MS_PER_S;
 		
 	// cliped to another plane
 		if (numplanes >= MAX_CLIP_PLANES)
@@ -386,7 +386,7 @@ void SV_AddGravity (edict_t *ent)
 	else
 		ent_gravity = 1.0;
 #endif
-	ent->v.velocity[2] -= ent_gravity * sv_gravity.value * host_frametime;
+	ent->v.velocity[2] -= (ent_gravity * sv_gravity.value * host_frametime) / MS_PER_S;
 }
 
 
@@ -436,7 +436,7 @@ SV_PushMove
 
 ============
 */
-void SV_PushMove (edict_t *pusher, float movetime)
+void SV_PushMove (edict_t *pusher, uint32_t movetime)
 {
 	int			i, e;
 	edict_t		*check, *block;
@@ -448,13 +448,13 @@ void SV_PushMove (edict_t *pusher, float movetime)
 
 	if (!pusher->v.velocity[0] && !pusher->v.velocity[1] && !pusher->v.velocity[2])
 	{
-		pusher->v.ltime += movetime;
+		pusher->v.ltime += movetime / (float)MS_PER_S;
 		return;
 	}
 
 	for (i=0 ; i<3 ; i++)
 	{
-		move[i] = pusher->v.velocity[i] * movetime;
+		move[i] = (pusher->v.velocity[i] * movetime) / MS_PER_S;
 		mins[i] = pusher->v.absmin[i] + move[i];
 		maxs[i] = pusher->v.absmax[i] + move[i];
 	}
@@ -464,7 +464,7 @@ void SV_PushMove (edict_t *pusher, float movetime)
 // move the pusher to it's final position
 
 	VectorAdd (pusher->v.origin, move, pusher->v.origin);
-	pusher->v.ltime += movetime;
+	pusher->v.ltime += movetime / (float)MS_PER_S;
 	SV_LinkEdict (pusher, false);
 
 
@@ -532,7 +532,7 @@ void SV_PushMove (edict_t *pusher, float movetime)
 
 			VectorCopy (pushorig, pusher->v.origin);
 			SV_LinkEdict (pusher, false);
-			pusher->v.ltime -= movetime;
+			pusher->v.ltime -= movetime / (float)MS_PER_S;
 
 			// if the pusher has a "blocked" function, call it
 			// otherwise, just stay in place until the obstacle is gone
@@ -563,7 +563,7 @@ SV_PushRotate
 
 ============
 */
-void SV_PushRotate (edict_t *pusher, float movetime)
+void SV_PushRotate (edict_t *pusher, uint32_t movetime)
 {
 	int			i, e;
 	edict_t		*check, *block;
@@ -577,12 +577,12 @@ void SV_PushRotate (edict_t *pusher, float movetime)
 
 	if (!pusher->v.avelocity[0] && !pusher->v.avelocity[1] && !pusher->v.avelocity[2])
 	{
-		pusher->v.ltime += movetime;
+		pusher->v.ltime += movetime / (float)MS_PER_S;
 		return;
 	}
 
 	for (i=0 ; i<3 ; i++)
-		amove[i] = pusher->v.avelocity[i] * movetime;
+		amove[i] = (pusher->v.avelocity[i] * movetime) / MS_PER_S;
 
 	VectorSubtract (vec3_origin, amove, a);
 	AngleVectors (a, forward, right, up);
@@ -592,7 +592,7 @@ void SV_PushRotate (edict_t *pusher, float movetime)
 // move the pusher to it's final position
 
 	VectorAdd (pusher->v.angles, amove, pusher->v.angles);
-	pusher->v.ltime += movetime;
+	pusher->v.ltime += movetime / (float)MS_PER_S;
 	SV_LinkEdict (pusher, false);
 
 
@@ -665,7 +665,7 @@ void SV_PushRotate (edict_t *pusher, float movetime)
 
 			VectorCopy (pushorig, pusher->v.angles);
 			SV_LinkEdict (pusher, false);
-			pusher->v.ltime -= movetime;
+			pusher->v.ltime -= movetime / (float)MS_PER_S;
 
 			// if the pusher has a "blocked" function, call it
 			// otherwise, just stay in place until the obstacle is gone
@@ -703,16 +703,16 @@ SV_Physics_Pusher
 */
 void SV_Physics_Pusher (edict_t *ent)
 {
-	float	thinktime;
-	float	oldltime;
-	float	movetime;
+	int32_t	thinktime;
+	int32_t	oldltime;
+	int32_t	movetime;
 
-	oldltime = ent->v.ltime;
+	oldltime = ent->v.ltime * MS_PER_S;
 	
-	thinktime = ent->v.nextthink;
-	if (thinktime < ent->v.ltime + host_frametime)
+	thinktime = ent->v.nextthink * MS_PER_S;
+	if (thinktime < (ent->v.ltime * MS_PER_S) + host_frametime)
 	{
-		movetime = thinktime - ent->v.ltime;
+		movetime = thinktime - (ent->v.ltime * MS_PER_S);
 		if (movetime < 0)
 			movetime = 0;
 	}
@@ -729,10 +729,10 @@ void SV_Physics_Pusher (edict_t *ent)
 			SV_PushMove (ent, movetime);	// advances ent->v.ltime if not blocked
 	}
 		
-	if (thinktime > oldltime && thinktime <= ent->v.ltime)
+	if (thinktime > oldltime && thinktime <= (ent->v.ltime * MS_PER_S))
 	{
 		ent->v.nextthink = 0;
-		pr_global_struct->time = sv.time;
+		pr_global_struct->time = sv.time / (float)MS_PER_S;
 		pr_global_struct->self = EDICT_TO_PROG(ent);
 		pr_global_struct->other = EDICT_TO_PROG(sv.edicts);
 		PR_ExecuteProgram (ent->v.think);
@@ -1001,7 +1001,7 @@ void SV_WalkMove (edict_t *ent)
 	VectorCopy (vec3_origin, upmove);
 	VectorCopy (vec3_origin, downmove);
 	upmove[2] = STEPSIZE;
-	downmove[2] = -STEPSIZE + oldvel[2]*host_frametime;
+	downmove[2] = -STEPSIZE + ((oldvel[2]*host_frametime) / MS_PER_S);
 
 // move up
 	SV_PushEntity (ent, upmove);	// FIXME: don't link?
@@ -1064,7 +1064,7 @@ void SV_Physics_Client (edict_t	*ent, int num)
 //
 // call standard client pre-think
 //	
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / (float)MS_PER_S;
 	pr_global_struct->self = EDICT_TO_PROG(ent);
 	PR_ExecuteProgram (pr_global_struct->PlayerPreThink);
 	
@@ -1125,7 +1125,7 @@ void SV_Physics_Client (edict_t	*ent, int num)
 //		
 	SV_LinkEdict (ent, true);
 
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / (float)MS_PER_S;
 	pr_global_struct->self = EDICT_TO_PROG(ent);
 	PR_ExecuteProgram (pr_global_struct->PlayerPostThink);
 }
@@ -1175,8 +1175,8 @@ void SV_Physics_Noclip (edict_t *ent)
 	if (!SV_RunThink (ent))
 		return;
 	
-	VectorMA (ent->v.angles, host_frametime, ent->v.avelocity, ent->v.angles);
-	VectorMA (ent->v.origin, host_frametime, ent->v.velocity, ent->v.origin);
+	VectorMA (ent->v.angles, host_frametime / MS_PER_S, ent->v.avelocity, ent->v.angles);
+	VectorMA (ent->v.origin, host_frametime / MS_PER_S, ent->v.velocity, ent->v.origin);
 
 	SV_LinkEdict (ent, false);
 }
@@ -1293,13 +1293,13 @@ void SV_Physics_Toss (edict_t *ent)
 #endif
 
 // move angles
-	VectorMA (ent->v.angles, host_frametime, ent->v.avelocity, ent->v.angles);
+	VectorMA (ent->v.angles, host_frametime / MS_PER_S, ent->v.avelocity, ent->v.angles);
 
 // move origin
 #ifdef QUAKE2
 	VectorAdd (ent->v.velocity, ent->v.basevelocity, ent->v.velocity);
 #endif
-	VectorScale (ent->v.velocity, host_frametime, move);
+	VectorScale (ent->v.velocity, host_frametime / MS_PER_S, move);
 	trace = SV_PushEntity (ent, move);
 #ifdef QUAKE2
 	VectorSubtract (ent->v.velocity, ent->v.basevelocity, ent->v.velocity);
@@ -1376,7 +1376,7 @@ void SV_Physics_Step (edict_t *ent)
 	else
 		VectorCopy(vec_origin, ent->v.basevelocity);
 //@@
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / MS_PER_S;
 	pr_global_struct->self = EDICT_TO_PROG(ent);
 	PF_WaterMove();
 
@@ -1414,7 +1414,7 @@ void SV_Physics_Step (edict_t *ent)
 					friction = sv_friction.value;
 
 					control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
-					newspeed = speed - host_frametime*control*friction;
+					newspeed = speed - (host_frametime*control*friction) / MS_PER_S;
 
 					if (newspeed < 0)
 						newspeed = 0;
@@ -1512,7 +1512,7 @@ void SV_Physics (void)
 // let the progs know that a new frame has started
 	pr_global_struct->self = EDICT_TO_PROG(sv.edicts);
 	pr_global_struct->other = EDICT_TO_PROG(sv.edicts);
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / MS_PER_S;
 	PR_ExecuteProgram (pr_global_struct->StartFrame);
 
 //SV_CheckAllEnts ();
@@ -1571,13 +1571,13 @@ trace_t SV_Trace_Toss (edict_t *ent, edict_t *ignore)
 	trace_t	trace;
 	vec3_t	move;
 	vec3_t	end;
-	double	save_frametime;
+	uint32_t	save_frametime;
 //	extern particle_t	*active_particles, *free_particles;
 //	particle_t	*p;
 
 
 	save_frametime = host_frametime;
-	host_frametime = 0.05;
+	host_frametime = 50;
 
 	memcpy(&tempent, ent, sizeof(edict_t));
 	tent = &tempent;
@@ -1586,8 +1586,8 @@ trace_t SV_Trace_Toss (edict_t *ent, edict_t *ignore)
 	{
 		SV_CheckVelocity (tent);
 		SV_AddGravity (tent);
-		VectorMA (tent->v.angles, host_frametime, tent->v.avelocity, tent->v.angles);
-		VectorScale (tent->v.velocity, host_frametime, move);
+		VectorMA (tent->v.angles, host_frametime / MS_PER_S, tent->v.avelocity, tent->v.angles);
+		VectorScale (tent->v.velocity, host_frametime / MS_PER_S, move);
 		VectorAdd (tent->v.origin, move, end);
 		trace = SV_Move (tent->v.origin, tent->v.mins, tent->v.maxs, end, MOVE_NORMAL, tent);	
 		VectorCopy (trace.endpos, tent->v.origin);

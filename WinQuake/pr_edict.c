@@ -94,7 +94,7 @@ edict_t *ED_Alloc (void)
 		e = EDICT_NUM(i);
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
-		if (e->free && ( e->freetime < 2 || sv.time - e->freetime > 0.5 ) )
+		if (e->free && ( e->freetime < 2000 || sv.time - e->freetime > 500 ) )
 		{
 			ED_ClearEdict (e);
 			return e;
@@ -910,7 +910,7 @@ void ED_LoadFromFile (char *data)
 	
 	ent = NULL;
 	inhibit = 0;
-	pr_global_struct->time = sv.time;
+	pr_global_struct->time = sv.time / MS_PER_S;
 	
 // parse ents
 	while (1)

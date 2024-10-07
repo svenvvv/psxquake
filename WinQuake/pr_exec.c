@@ -563,8 +563,10 @@ while (1)
 #ifdef PARANOID
 		NUM_FOR_EDICT(ed);		// make sure it's in range
 #endif
-		if (ed == (edict_t *)sv.edicts && sv.state == ss_active)
+		if (ed == (edict_t *)sv.edicts && sv.state == ss_active) {
+			printf("ed %p state %d\n", ed, sv.state);
 			PR_RunError ("assignment to world entity");
+		}
 		c->_int = (byte *)((int *)&ed->v + b->_int) - (byte *)sv.edicts;
 		break;
 		
@@ -649,9 +651,9 @@ while (1)
 	case OP_STATE:
 		ed = PROG_TO_EDICT(pr_global_struct->self);
 #ifdef FPS_20
-		ed->v.nextthink = pr_global_struct->time + 0.05;
+		ed->v.nextthink = pr_global_struct->time + 0.05f;
 #else
-		ed->v.nextthink = pr_global_struct->time + 0.1;
+		ed->v.nextthink = pr_global_struct->time + 0.1f;
 #endif
 		if (a->_float != ed->v.frame)
 		{

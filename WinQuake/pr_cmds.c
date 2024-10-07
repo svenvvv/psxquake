@@ -758,7 +758,7 @@ void PF_checkclient (void)
 	vec3_t	view;
 	
 // find a new check if on a new frame
-	if (sv.time - sv.lastchecktime >= 0.1)
+	if (sv.time - sv.lastchecktime >= 100)
 	{
 		sv.lastcheck = PF_newcheckclient (sv.lastcheck);
 		sv.lastchecktime = sv.time;
@@ -1693,7 +1693,7 @@ void PF_WaterMove (void)
 
 	if (self->v.movetype == MOVETYPE_NOCLIP)
 	{
-		self->v.air_finished = sv.time + 12;
+		self->v.air_finished = (sv.time + 12 * MS_PER_S) / MS_PER_S;
 		G_FLOAT(OFS_RETURN) = damage;
 		return;
 	}
@@ -1716,26 +1716,26 @@ void PF_WaterMove (void)
 	if (!(flags & (FL_IMMUNE_WATER + FL_GODMODE)))
 		if (((flags & FL_SWIM) && (waterlevel < drownlevel)) || (waterlevel >= drownlevel))
 		{
-			if (self->v.air_finished < sv.time)
-				if (self->v.pain_finished < sv.time)
+			if (self->v.air_finished * MS_PER_S < sv.time)
+				if (self->v.pain_finished * MS_PER_S < sv.time)
 				{
 					self->v.dmg = self->v.dmg + 2;
 					if (self->v.dmg > 15)
 						self->v.dmg = 10;
 //					T_Damage (self, world, world, self.dmg, 0, FALSE);
 					damage = self->v.dmg;
-					self->v.pain_finished = sv.time + 1.0;
+					self->v.pain_finished = (sv.time + 1000) / (float)MS_PER_S;
 				}
 		}
 		else
 		{
-			if (self->v.air_finished < sv.time)
+			if (self->v.air_finished * MS_PER_S < sv.time)
 //				sound (self, CHAN_VOICE, "player/gasp2.wav", 1, ATTN_NORM);
 				SV_StartSound (self, CHAN_VOICE, "player/gasp2.wav", 255, ATTN_NORM);
-			else if (self->v.air_finished < sv.time + 9)
+			else if (self->v.air_finished * MS_PER_S < sv.time + 9 * MS_PER_S)
 //				sound (self, CHAN_VOICE, "player/gasp1.wav", 1, ATTN_NORM);
 				SV_StartSound (self, CHAN_VOICE, "player/gasp1.wav", 255, ATTN_NORM);
-			self->v.air_finished = sv.time + 12.0;
+			self->v.air_finished = (sv.time + 12 * MS_PER_S) / MS_PER_S;
 			self->v.dmg = 2;
 		}
 	
@@ -1748,7 +1748,7 @@ void PF_WaterMove (void)
 			SV_StartSound (self, CHAN_BODY, "misc/outwater.wav", 255, ATTN_NORM);
 			self->v.flags = (float)(flags &~FL_INWATER);
 		}
-		self->v.air_finished = sv.time + 12.0;
+		self->v.air_finished = (sv.time + 12 * MS_PER_S) / MS_PER_S;
 		G_FLOAT(OFS_RETURN) = damage;
 		return;
 	}
@@ -1758,10 +1758,10 @@ void PF_WaterMove (void)
 		if (!(flags & (FL_IMMUNE_LAVA + FL_GODMODE)))
 			if (self->v.dmgtime < sv.time)
 			{
-				if (self->v.radsuit_finished < sv.time)
-					self->v.dmgtime = sv.time + 0.2;
+				if (self->v.radsuit_finished * MS_PER_S < sv.time)
+					self->v.dmgtime = sv.time + 200;
 				else
-					self->v.dmgtime = sv.time + 1.0;
+					self->v.dmgtime = sv.time + 1000;
 //				T_Damage (self, world, world, 10*self.waterlevel, 0, TRUE);
 				damage = (float)(10*waterlevel);
 			}
@@ -1769,9 +1769,9 @@ void PF_WaterMove (void)
 	else if (watertype == CONTENT_SLIME)
 	{	// do damage
 		if (!(flags & (FL_IMMUNE_SLIME + FL_GODMODE)))
-			if (self->v.dmgtime < sv.time && self->v.radsuit_finished < sv.time)
+			if (self->v.dmgtime < sv.time && self->v.radsuit_finished * MS_PER_S < sv.time)
 			{
-				self->v.dmgtime = sv.time + 1.0;
+				self->v.dmgtime = sv.time + 1000;
 //				T_Damage (self, world, world, 4*self.waterlevel, 0, TRUE);
 				damage = (float)(4*waterlevel);
 			}
@@ -1798,7 +1798,7 @@ void PF_WaterMove (void)
 	if (! (flags & FL_WATERJUMP) )
 	{
 //		self.velocity = self.velocity - 0.8*self.waterlevel*frametime*self.velocity;
-		VectorMA (self->v.velocity, -0.8 * self->v.waterlevel * host_frametime, self->v.velocity, self->v.velocity);
+		VectorMA (self->v.velocity, -0.8 * self->v.waterlevel * (host_frametime / MS_PER_S), self->v.velocity, self->v.velocity);
 	}
 
 	G_FLOAT(OFS_RETURN) = damage;

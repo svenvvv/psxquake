@@ -334,9 +334,9 @@ void Sys_EditFile(char * filename)
 	// Unsupported on PSX
 }
 
-double Sys_FloatTime(void)
+uint32_t Sys_MilliTime(void)
 {
-	return systick_ms / 1000.0;
+	return systick_ms;
 }
 
 // =======================================================================
@@ -373,7 +373,7 @@ extern uint8_t _end[];
 
 int main(int c, char ** v)
 {
-    double      time, oldtime, newtime;
+    uint32_t time, oldtime, newtime;
     quakeparms_t parms;
     int j;
 
@@ -456,14 +456,14 @@ int main(int c, char ** v)
 
 	printf("PSX Quake\n");
 
-    oldtime = Sys_FloatTime() - 0.1;
+    oldtime = Sys_MilliTime() - 100;
 
     while (1) {
-// find time spent rendering last frame
-        newtime = Sys_FloatTime();
+		// find time spent rendering last frame
+        newtime = Sys_MilliTime();
         time = newtime - oldtime;
 
-        if (time > sys_ticrate.value * 2)
+        if (time > sys_ticrate.value * 2 * MS_PER_S)
             oldtime = newtime;
         else
             oldtime += time;

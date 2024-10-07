@@ -83,7 +83,7 @@ typedef struct client_s
 	qboolean		privileged;			// can execute any host command
 	qboolean		sendsignon;			// only valid before spawned
 
-	double			last_message;		// reliable messages must be sent
+	uint32_t			last_message;		// reliable messages must be sent
 										// periodically
 
 	struct qsocket_s *netconnection;	// communications handle
@@ -98,7 +98,7 @@ typedef struct client_s
 	char			name[32];			// for printing to other people
 	int				colors;
 		
-	float			ping_times[NUM_PING_TIMES];
+	uint32_t		ping_times[NUM_PING_TIMES];
 	int				num_pings;			// ping_times[num_pings%NUM_PING_TIMES]
 
 // spawn parms are carried from level to level
@@ -209,7 +209,7 @@ extern	client_t	*host_client;
 
 extern	jmp_buf 	host_abortserver;
 
-extern	double		host_time;
+extern	uint32_t		host_time;
 
 extern	edict_t		*sv_player;
 

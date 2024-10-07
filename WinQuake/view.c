@@ -64,7 +64,8 @@ cvar_t	cl_crossy = {"cl_crossy", "0", false};
 
 cvar_t	gl_cshiftpercent = {"gl_cshiftpercent", "100", false};
 
-float	v_dmg_time, v_dmg_roll, v_dmg_pitch;
+int32_t	v_dmg_time;
+float		v_dmg_roll, v_dmg_pitch;
 
 extern	int			in_forward, in_forward2, in_back;
 
@@ -113,19 +114,20 @@ float V_CalcBob (void)
 {
 	float	bob;
 	float	cycle;
-	
-	cycle = cl.time - (int)(cl.time/cl_bobcycle.value)*cl_bobcycle.value;
+	float ftime = (float)cl.time / (float)MS_PER_S;
+
+	cycle = ftime - (int)(ftime/cl_bobcycle.value)*cl_bobcycle.value;
 	cycle /= cl_bobcycle.value;
 	if (cycle < cl_bobup.value)
 		cycle = M_PI * cycle / cl_bobup.value;
 	else
 		cycle = M_PI + M_PI*(cycle-cl_bobup.value)/(1.0 - cl_bobup.value);
 
-// bob is proportional to velocity in the xy plane
-// (don't count Z, or jumping messes it up)
+	// bob is proportional to velocity in the xy plane
+	// (don't count Z, or jumping messes it up)
 
 	bob = sqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1]) * cl_bob.value;
-//Con_Printf ("speed: %5.1f\n", Length(cl.velocity));
+	//Con_Printf ("speed: %5.1f\n", Length(cl.velocity));
 	bob = bob*0.3 + bob*0.7*sin(cycle);
 	if (bob > 4)
 		bob = 4;
@@ -213,8 +215,8 @@ void V_DriftPitch (void)
 		return;
 	}
 
-	move = host_frametime * cl.pitchvel;
-	cl.pitchvel += host_frametime * v_centerspeed.value;
+	move = (host_frametime * cl.pitchvel) / MS_PER_S;
+	cl.pitchvel += (host_frametime * v_centerspeed.value) / MS_PER_S;
 	
 //Con_Printf ("move: %f (%f)\n", move, host_frametime);
 
@@ -332,7 +334,7 @@ void V_ParseDamage (void)
 	if (count < 10)
 		count = 10;
 
-	cl.faceanimtime = cl.time + 0.2;		// but sbar face into pain frame
+	cl.faceanimtime = cl.time + 200;		// but sbar face into pain frame
 
 	cl.cshifts[CSHIFT_DAMAGE].percent += 3*count;
 	if (cl.cshifts[CSHIFT_DAMAGE].percent < 0)
@@ -375,7 +377,7 @@ void V_ParseDamage (void)
 	side = DotProduct (from, forward);
 	v_dmg_pitch = count*side*v_kickpitch.value;
 
-	v_dmg_time = v_kicktime.value;
+	v_dmg_time = v_kicktime.value * MS_PER_S;
 }
 
 
@@ -554,12 +556,13 @@ void V_UpdatePalette (void)
 	}
 	
 // drop the damage value
-	cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime*150;
+	// cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime*150;
+	cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime/7;
 	if (cl.cshifts[CSHIFT_DAMAGE].percent <= 0)
 		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
 
 // drop the bonus value
-	cl.cshifts[CSHIFT_BONUS].percent -= host_frametime*100;
+	cl.cshifts[CSHIFT_BONUS].percent -= host_frametime/10;
 	if (cl.cshifts[CSHIFT_BONUS].percent <= 0)
 		cl.cshifts[CSHIFT_BONUS].percent = 0;
 
@@ -640,12 +643,13 @@ void V_UpdatePalette (void)
 	}
 	
 // drop the damage value
-	cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime*150;
+	// cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime*150;
+	cl.cshifts[CSHIFT_DAMAGE].percent -= host_frametime/7;
 	if (cl.cshifts[CSHIFT_DAMAGE].percent <= 0)
 		cl.cshifts[CSHIFT_DAMAGE].percent = 0;
 
 // drop the bonus value
-	cl.cshifts[CSHIFT_BONUS].percent -= host_frametime*100;
+	cl.cshifts[CSHIFT_BONUS].percent -= host_frametime/10;
 	if (cl.cshifts[CSHIFT_BONUS].percent <= 0)
 		cl.cshifts[CSHIFT_BONUS].percent = 0;
 
@@ -721,7 +725,7 @@ void CalcGunAngle (void)
 		pitch = 10;
 	if (pitch < -10)
 		pitch = -10;
-	move = host_frametime*20;
+	move = host_frametime/50;
 	if (yaw > oldyaw)
 	{
 		if (oldyaw + move < yaw)
@@ -750,9 +754,11 @@ void CalcGunAngle (void)
 	cl.viewent.angles[YAW] = r_refdef.viewangles[YAW] + yaw;
 	cl.viewent.angles[PITCH] = - (r_refdef.viewangles[PITCH] + pitch);
 
-	cl.viewent.angles[ROLL] -= v_idlescale.value * sin(cl.time*v_iroll_cycle.value) * v_iroll_level.value;
-	cl.viewent.angles[PITCH] -= v_idlescale.value * sin(cl.time*v_ipitch_cycle.value) * v_ipitch_level.value;
-	cl.viewent.angles[YAW] -= v_idlescale.value * sin(cl.time*v_iyaw_cycle.value) * v_iyaw_level.value;
+	// TODO PSX
+	float ftime = cl.time / 1000.0f;
+	cl.viewent.angles[ROLL] -= v_idlescale.value * sin(ftime*v_iroll_cycle.value) * v_iroll_level.value;
+	cl.viewent.angles[PITCH] -= v_idlescale.value * sin(ftime*v_ipitch_cycle.value) * v_ipitch_level.value;
+	cl.viewent.angles[YAW] -= v_idlescale.value * sin(ftime*v_iyaw_cycle.value) * v_iyaw_level.value;
 }
 
 /*
@@ -792,9 +798,11 @@ Idle swaying
 */
 void V_AddIdle (void)
 {
-	r_refdef.viewangles[ROLL] += v_idlescale.value * sin(cl.time*v_iroll_cycle.value) * v_iroll_level.value;
-	r_refdef.viewangles[PITCH] += v_idlescale.value * sin(cl.time*v_ipitch_cycle.value) * v_ipitch_level.value;
-	r_refdef.viewangles[YAW] += v_idlescale.value * sin(cl.time*v_iyaw_cycle.value) * v_iyaw_level.value;
+	// TODO PSX
+	float ftime = cl.time / 1000.0f;
+	r_refdef.viewangles[ROLL] += v_idlescale.value * sin(ftime*v_iroll_cycle.value) * v_iroll_level.value;
+	r_refdef.viewangles[PITCH] += v_idlescale.value * sin(ftime*v_ipitch_cycle.value) * v_ipitch_level.value;
+	r_refdef.viewangles[YAW] += v_idlescale.value * sin(ftime*v_iyaw_cycle.value) * v_iyaw_level.value;
 }
 
 
@@ -814,8 +822,8 @@ void V_CalcViewRoll (void)
 
 	if (v_dmg_time > 0)
 	{
-		r_refdef.viewangles[ROLL] += v_dmg_time/v_kicktime.value*v_dmg_roll;
-		r_refdef.viewangles[PITCH] += v_dmg_time/v_kicktime.value*v_dmg_pitch;
+		r_refdef.viewangles[ROLL] += (v_dmg_time/v_kicktime.value*v_dmg_roll) / MS_PER_S;
+		r_refdef.viewangles[PITCH] += (v_dmg_time/v_kicktime.value*v_dmg_pitch) / MS_PER_S;
 		v_dmg_time -= host_frametime;
 	}
 
@@ -960,14 +968,15 @@ void V_CalcRefdef (void)
 // smooth out stair step ups
 if (cl.onground && ent->origin[2] - oldz > 0)
 {
-	float steptime;
+	int32_t steptime;
 	
 	steptime = cl.time - cl.oldtime;
 	if (steptime < 0)
 //FIXME		I_Error ("steptime < 0");
 		steptime = 0;
 
-	oldz += steptime * 80;
+	// oldz += steptime * 80;
+	oldz += steptime / 13;
 	if (oldz > ent->origin[2])
 		oldz = ent->origin[2];
 	if (ent->origin[2] - oldz > 12)

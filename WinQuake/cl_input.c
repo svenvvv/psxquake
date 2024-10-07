@@ -235,9 +235,9 @@ void CL_AdjustAngles (void)
 	float	up, down;
 	
 	if (in_speed.state & 1)
-		speed = host_frametime * cl_anglespeedkey.value;
+		speed = (host_frametime * cl_anglespeedkey.value) / (float)MS_PER_S;
 	else
-		speed = host_frametime;
+		speed = host_frametime / (float)MS_PER_S;
 
 	if (!(in_strafe.state & 1))
 	{
@@ -347,7 +347,7 @@ void CL_SendMove (usercmd_t *cmd)
 //
     MSG_WriteByte (&buf, clc_move);
 
-	MSG_WriteFloat (&buf, cl.mtime[0]);	// so server can get ping times
+	MSG_WriteFloat (&buf, cl.mtime[0] / (float)MS_PER_S);	// so server can get ping times
 
 	for (i=0 ; i<3 ; i++)
 		MSG_WriteAngle (&buf, cl.viewangles[i]);

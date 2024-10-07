@@ -429,14 +429,14 @@ For program optimization
 void R_TimeRefresh_f (void)
 {
 	int			i;
-	float		start, stop, time;
+	uint32_t	start, stop, time;
 	int			startangle;
 	vrect_t		vr;
 
 	glDrawBuffer  (GL_FRONT);
 	glFinish ();
 
-	start = Sys_FloatTime ();
+	start = Sys_MilliTime ();
 	for (i=0 ; i<128 ; i++)
 	{
 		r_refdef.viewangles[1] = i/128.0*360.0;
@@ -444,9 +444,9 @@ void R_TimeRefresh_f (void)
 	}
 
 	glFinish ();
-	stop = Sys_FloatTime ();
+	stop = Sys_MilliTime ();
 	time = stop-start;
-	Con_Printf ("%f seconds (%f fps)\n", time, 128/time);
+	Con_Printf ("%f seconds (%f fps)\n", time / MS_PER_S, 128/(time / MS_PER_S));
 
 	glDrawBuffer  (GL_BACK);
 	GL_EndRendering ();

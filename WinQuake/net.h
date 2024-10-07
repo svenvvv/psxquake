@@ -218,7 +218,7 @@ extern int		unreliableMessagesReceived;
 
 qsocket_t *NET_NewQSocket (void);
 void NET_FreeQSocket(qsocket_t *);
-double SetNetTime(void);
+uint32_t SetNetTime(void);
 
 
 #define HOSTCACHESIZE	8
@@ -263,7 +263,7 @@ qboolean IsID(struct qsockaddr *addr);
 //
 //============================================================================
 
-extern	double		net_time;
+extern	uint32_t		net_time;
 extern	sizebuf_t	net_message;
 extern	int			net_activeconnections;
 
@@ -318,7 +318,7 @@ typedef struct _PollProcedure
 	void					*arg;
 } PollProcedure;
 
-void SchedulePollProcedure(PollProcedure *pp, double timeOffset);
+void SchedulePollProcedure(PollProcedure *pp, uint32_t timeOffset);
 
 extern	qboolean	serialAvailable;
 extern	qboolean	ipxAvailable;

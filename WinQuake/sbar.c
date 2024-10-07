@@ -467,8 +467,8 @@ void Sbar_SoloScoreboard (void)
 	Sbar_DrawString (8, 12, str);
 
 // time
-	minutes = cl.time / 60;
-	seconds = cl.time - 60*minutes;
+	minutes = cl.time / MS_PER_S / 60;
+	seconds = (cl.time / MS_PER_S) - 60*minutes;
 	tens = seconds / 10;
 	units = seconds - 10*tens;
 	sprintf (str,"Time :%3i:%i%i", minutes, tens, units);
@@ -547,7 +547,7 @@ void Sbar_DrawInventory (void)
 {
 	int		i;
 	char	num[6];
-	float	time;
+	uint32_t	time;
 	int		flashon;
 
 	if (rogue)
@@ -568,7 +568,7 @@ void Sbar_DrawInventory (void)
 		if (cl.items & (IT_SHOTGUN<<i) )
 		{
 			time = cl.item_gettime[i];
-			flashon = (int)((cl.time - time)*10);
+			flashon = (int)((cl.time - time)/100);
 			if (flashon >= 10)
 			{
 				if ( cl.stats[STAT_ACTIVEWEAPON] == (IT_SHOTGUN<<i)  )
@@ -596,7 +596,7 @@ void Sbar_DrawInventory (void)
          if (cl.items & (1<<hipweapons[i]) )
          {
             time = cl.item_gettime[hipweapons[i]];
-            flashon = (int)((cl.time - time)*10);
+            flashon = (int)((cl.time - time)/100);
             if (flashon >= 10)
             {
                if ( cl.stats[STAT_ACTIVEWEAPON] == (1<<hipweapons[i])  )
@@ -676,7 +676,7 @@ void Sbar_DrawInventory (void)
       if (cl.items & (1<<(17+i)))
       {
          time = cl.item_gettime[17+i];
-         if (time && time > cl.time - 2 && flashon )
+         if (time && time > cl.time - 2000 && flashon )
          {  // flash frame
             sb_updates = 0;
          }
@@ -688,7 +688,7 @@ void Sbar_DrawInventory (void)
                Sbar_DrawPic (192 + i*16, -16, sb_items[i]);
             }
          }
-         if (time && time > cl.time - 2)
+         if (time && time > cl.time - 2000)
             sb_updates = 0;
       }
    //MED 01/04/97 added hipnotic items
@@ -699,7 +699,7 @@ void Sbar_DrawInventory (void)
          if (cl.items & (1<<(24+i)))
          {
             time = cl.item_gettime[24+i];
-            if (time && time > cl.time - 2 && flashon )
+            if (time && time > cl.time - 2000 && flashon )
             {  // flash frame
                sb_updates = 0;
             }
@@ -707,7 +707,7 @@ void Sbar_DrawInventory (void)
             {
                Sbar_DrawPic (288 + i*16, -16, hsb_items[i]);
             }
-            if (time && time > cl.time - 2)
+            if (time && time > cl.time - 2000)
                sb_updates = 0;
          }
    }
@@ -721,7 +721,7 @@ void Sbar_DrawInventory (void)
 			{
 				time = cl.item_gettime[29+i];
 
-				if (time &&	time > cl.time - 2 && flashon )
+				if (time &&	time > cl.time - 2000 && flashon )
 				{	// flash frame
 					sb_updates = 0;
 				}
@@ -730,7 +730,7 @@ void Sbar_DrawInventory (void)
 					Sbar_DrawPic (288 + i*16, -16, rsb_items[i]);
 				}
 
-				if (time &&	time > cl.time - 2)
+				if (time &&	time > cl.time - 2000)
 					sb_updates = 0;
 			}
 		}
@@ -743,13 +743,13 @@ void Sbar_DrawInventory (void)
 			if (cl.items & (1<<(28+i)))
 			{
 				time = cl.item_gettime[28+i];
-				if (time &&	time > cl.time - 2 && flashon )
+				if (time &&	time > cl.time - 2000 && flashon )
 				{	// flash frame
 					sb_updates = 0;
 				}
 				else
 					Sbar_DrawPic (320-32 + i*8, -16, sb_sigil[i]);
-				if (time &&	time > cl.time - 2)
+				if (time &&	time > cl.time - 2000)
 					sb_updates = 0;
 			}
 		}
@@ -1288,9 +1288,9 @@ void Sbar_IntermissionOverlay (void)
 	Draw_TransPic (0, 56, pic);
 
 // time
-	dig = cl.completed_time/60;
+	dig = (cl.completed_time/MS_PER_S)/60;
 	Sbar_IntermissionNumber (160, 64, dig, 3, 0);
-	num = cl.completed_time - dig*60;
+	num = (cl.completed_time/MS_PER_S) - dig*60;
 	Draw_TransPic (234,64,sb_colon);
 	Draw_TransPic (246,64,sb_nums[0][num/10]);
 	Draw_TransPic (266,64,sb_nums[0][num%10]);

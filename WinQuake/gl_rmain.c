@@ -206,7 +206,8 @@ mspriteframe_t *R_GetSpriteFrame (entity_t *currententity)
 	mspritegroup_t	*pspritegroup;
 	mspriteframe_t	*pspriteframe;
 	int				i, numframes, frame;
-	float			*pintervals, fullinterval, targettime, time;
+	float			*pintervals, fullinterval;
+	int32_t			targettime, time;
 
 	psprite = (msprite_t*) currententity->model->cache.data;
 	frame = currententity->frame;
@@ -232,7 +233,7 @@ mspriteframe_t *R_GetSpriteFrame (entity_t *currententity)
 
 	// when loading in Mod_LoadSpriteGroup, we guaranteed all interval values
 	// are positive, so we don't have to worry about division by 0
-		targettime = time - ((int)(time / fullinterval)) * fullinterval;
+		targettime = time - ((int)(time / (fullinterval * MS_PER_S))) * (fullinterval * MS_PER_S);
 
 		for (i=0 ; i<(numframes-1) ; i++)
 		{
@@ -741,7 +742,7 @@ void R_SetupAliasFrame (int frame, aliashdr_t *paliashdr)
 	if (numposes > 1)
 	{
 		interval = paliashdr->frames[frame].interval;
-		pose += (int)(cl.time / interval) % numposes;
+		pose += (int)(cl.time / (interval * MS_PER_S)) % numposes;
 	}
 
 	GL_DrawAliasFrame (paliashdr, pose);
@@ -859,7 +860,7 @@ void R_DrawAliasModel (entity_t *e)
 	// 	glScalef (paliashdr->scale[0], paliashdr->scale[1], paliashdr->scale[2]);
 	// }
 
-	anim = (int)(cl.time*10) & 3;
+	anim = (int)(cl.time/10) & 3;
     GL_Bind(paliashdr->gl_texturenum[currententity->skinnum][anim]);
 
 	// we can't dynamically colormap textures, so they are cached
@@ -1435,7 +1436,7 @@ r_refdef must be set before the first call
 */
 void R_RenderView (void)
 {
-	double	time1, time2;
+	uint32_t	time1, time2;
 	GLfloat colors[4] = {(GLfloat) 0.0, (GLfloat) 0.0, (GLfloat) 1, (GLfloat) 0.20};
 
 	if (r_norefresh.value)
@@ -1447,7 +1448,7 @@ void R_RenderView (void)
 	if (r_speeds.value)
 	{
 		glFinish ();
-		time1 = Sys_FloatTime ();
+		time1 = Sys_MilliTime ();
 		c_brush_polys = 0;
 		c_alias_polys = 0;
 	}
@@ -1485,7 +1486,7 @@ void R_RenderView (void)
 	if (r_speeds.value)
 	{
 //		glFinish ();
-		time2 = Sys_FloatTime ();
-		Con_Printf ("%3i ms  %4i wpoly %4i epoly\n", (int)((time2-time1)*1000), c_brush_polys, c_alias_polys); 
+		time2 = Sys_MilliTime ();
+		Con_Printf ("%3i ms  %4i wpoly %4i epoly\n", time2-time1, c_brush_polys, c_alias_polys);
 	}
 }
