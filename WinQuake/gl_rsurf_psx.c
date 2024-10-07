@@ -495,50 +495,50 @@ void R_DrawSequentialPoly (msurface_t *s)
 
 			POLY_FT3 * poly = (POLY_FT3*)rb_nextpri;
 
-			v = p->verts[0];
-			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
-			{
-				// glTexCoord2f (v[5], v[6]);
-				// glVertex3fv (v);
-				int32_t gv;
-				SVECTOR vertices[3] = { int16_t(v[0]), int16_t(v[1]), int16_t(v[2]) };
-
-				gte_ldv3(
-					&vertices[0],
-					&vertices[1],
-					&vertices[2]
-				);
-
-				gte_rtpt();
-				gte_nclip();
-				gte_stopz(&gv);
-				if (gv < 0)
-					continue;
-
-				gte_avsz4();
-				gte_stotz(&gv);
-				if ((gv >> 2) > OT_LEN)
-					continue;
-
-				setPolyFT3(poly);
-
-				gte_stsxy0(&(poly->x0));
-				gte_stsxy1(&(poly->x1));
-				gte_stsxy2(&(poly->x2));
-
-				setRGB0(poly, 63, 0, 127);
-
-				SVECTOR norm = 	{ 0, -ONE, 0, 0 };
-
-				gte_ldrgb(&(poly->r0));
-				gte_ldv0(&norm);
-				gte_ncs();
-				gte_strgb(&(poly->r0));
-
-				psx_add_prim(poly, 0);
-				// poly++;
-				// rb_nextpri = (void*)poly;
-			}
+			// v = p->verts[0];
+			// for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+			// {
+			// 	// glTexCoord2f (v[5], v[6]);
+			// 	// glVertex3fv (v);
+			// 	int32_t gv;
+			// 	SVECTOR vertices[3] = { int16_t(v[0]), int16_t(v[1]), int16_t(v[2]) };
+   //
+			// 	gte_ldv3(
+			// 		&vertices[0],
+			// 		&vertices[1],
+			// 		&vertices[2]
+			// 	);
+   //
+			// 	gte_rtpt();
+			// 	gte_nclip();
+			// 	gte_stopz(&gv);
+			// 	if (gv < 0)
+			// 		continue;
+   //
+			// 	gte_avsz4();
+			// 	gte_stotz(&gv);
+			// 	if ((gv >> 2) > OT_LEN)
+			// 		continue;
+   //
+			// 	setPolyFT3(poly);
+   //
+			// 	gte_stsxy0(&(poly->x0));
+			// 	gte_stsxy1(&(poly->x1));
+			// 	gte_stsxy2(&(poly->x2));
+   //
+			// 	setRGB0(poly, 63, 0, 127);
+   //
+			// 	SVECTOR norm = 	{ 0, -ONE, 0, 0 };
+   //
+			// 	gte_ldrgb(&(poly->r0));
+			// 	gte_ldv0(&norm);
+			// 	gte_ncs();
+			// 	gte_strgb(&(poly->r0));
+   //
+			// 	psx_add_prim(poly, 0);
+			// 	// poly++;
+			// 	// rb_nextpri = (void*)poly;
+			// }
 
 
 			// GL_Bind (t->gl_texturenum);
@@ -662,45 +662,47 @@ void DrawGLWaterPoly (glpoly_t *p)
 	float	s, t, os, ot;
 	vec3_t	nv;
 
-	GL_DisableMultitexture();
+	// TODO PSX
+	// GL_DisableMultitexture();
 
-	glBegin (GL_TRIANGLE_FAN);
-	v = p->verts[0];
-	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
-	{
-		glTexCoord2f (v[3], v[4]);
-
-		nv[0] = v[0] + 8*sin(v[1]*0.05+realtime)*sin(v[2]*0.05+realtime);
-		nv[1] = v[1] + 8*sin(v[0]*0.05+realtime)*sin(v[2]*0.05+realtime);
-		nv[2] = v[2];
-
-		glVertex3fv (nv);
-	}
-	glEnd ();
+	// glBegin (GL_TRIANGLE_FAN);
+	// v = p->verts[0];
+	// for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+	// {
+	// 	glTexCoord2f (v[3], v[4]);
+ //
+	// 	nv[0] = v[0] + 8*sin(v[1]*0.05+realtime)*sin(v[2]*0.05+realtime);
+	// 	nv[1] = v[1] + 8*sin(v[0]*0.05+realtime)*sin(v[2]*0.05+realtime);
+	// 	nv[2] = v[2];
+ //
+	// 	glVertex3fv (nv);
+	// }
+	// glEnd ();
 }
 
 void DrawGLWaterPolyLightmap (glpoly_t *p)
 {
-	int		i;
-	float	*v;
-	float	s, t, os, ot;
-	vec3_t	nv;
-
-	GL_DisableMultitexture();
-
-	glBegin (GL_TRIANGLE_FAN);
-	v = p->verts[0];
-	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
-	{
-		glTexCoord2f (v[5], v[6]);
-
-		nv[0] = v[0] + 8*sin(v[1]*0.05+realtime)*sin(v[2]*0.05+realtime);
-		nv[1] = v[1] + 8*sin(v[0]*0.05+realtime)*sin(v[2]*0.05+realtime);
-		nv[2] = v[2];
-
-		glVertex3fv (nv);
-	}
-	glEnd ();
+	// TODO PSX
+	// int		i;
+	// float	*v;
+	// float	s, t, os, ot;
+	// vec3_t	nv;
+ //
+	// GL_DisableMultitexture();
+ //
+	// glBegin (GL_TRIANGLE_FAN);
+	// v = p->verts[0];
+	// for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+	// {
+	// 	glTexCoord2f (v[5], v[6]);
+ //
+	// 	nv[0] = v[0] + 8*sin(v[1]*0.05+realtime)*sin(v[2]*0.05+realtime);
+	// 	nv[1] = v[1] + 8*sin(v[0]*0.05+realtime)*sin(v[2]*0.05+realtime);
+	// 	nv[2] = v[2];
+ //
+	// 	glVertex3fv (nv);
+	// }
+	// glEnd ();
 }
 
 /*
@@ -715,9 +717,9 @@ void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
 void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 				   struct vram_texture const * tex);
 
-static inline void loadVerts(SVECTOR & out, float const verts[3])
+static inline void loadVerts(SVECTOR & out, int16_t const verts[3])
 {
-	out = { int16_t(verts[0]), int16_t(verts[1]), int16_t(verts[2]) };
+	out = { verts[0], verts[1], verts[2] };
 }
 
 void DrawGLPoly (glpoly_t *p, int texturenum)
@@ -731,35 +733,35 @@ void DrawGLPoly (glpoly_t *p, int texturenum)
 	if (p->numverts % 4 == 0) {
 		for (int off = 0; (p->numverts - off) > 0; off += 4) {
 			loadVerts(verts[0], p->verts[off + 0]);
-			uv[0] = p->verts[off + 0][3] * tex->rect.w;
-			uv[1] = p->verts[off + 0][4] * tex->rect.h;
+			uv[0] = p->verts[off + 0][3];
+			uv[1] = p->verts[off + 0][4];
 
 			loadVerts(verts[2], p->verts[off + 1]);
-			uv[4] = p->verts[off + 1][3] * tex->rect.w;
-			uv[5] = p->verts[off + 1][4] * tex->rect.h;
+			uv[4] = p->verts[off + 1][3];
+			uv[5] = p->verts[off + 1][4];
 
 			loadVerts(verts[3], p->verts[off + 2]);
-			uv[6] = p->verts[off + 2][3] * tex->rect.w;
-			uv[7] = p->verts[off + 2][4] * tex->rect.h;
+			uv[6] = p->verts[off + 2][3];
+			uv[7] = p->verts[off + 2][4];
 
 			loadVerts(verts[1], p->verts[off + 3]);
-			uv[2] = p->verts[off + 3][3] * tex->rect.w;
-			uv[3] = p->verts[off + 3][4] * tex->rect.h;
+			uv[2] = p->verts[off + 3][3];
+			uv[3] = p->verts[off + 3][4];
 			draw_quad_tex(verts, uv, tex);
 		}
 	} else if (p->numverts % 3 == 0) {
 		for (int off = 0; (p->numverts - off) > 0; off += 3) {
 			loadVerts(verts[2], p->verts[off + 0]);
-			uv[4] = p->verts[off + 0][3] * tex->rect.w;
-			uv[5] = p->verts[off + 0][4] * tex->rect.h;
+			uv[4] = p->verts[off + 0][3];
+			uv[5] = p->verts[off + 0][4];
 
 			loadVerts(verts[1], p->verts[off + 1]);
-			uv[2] = p->verts[off + 1][3] * tex->rect.w;
-			uv[3] = p->verts[off + 1][4] * tex->rect.h;
+			uv[2] = p->verts[off + 1][3];
+			uv[3] = p->verts[off + 1][4];
 
 			loadVerts(verts[0], p->verts[off + 2]);
-			uv[0] = p->verts[off + 2][3] * tex->rect.w;
-			uv[1] = p->verts[off + 2][4] * tex->rect.h;
+			uv[0] = p->verts[off + 2][3];
+			uv[1] = p->verts[off + 2][4];
 
 			draw_tri_tex(verts, uv, tex);
 		}
@@ -1588,7 +1590,7 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 	//
 	// draw texture
 	//
-	poly = (glpoly_t*) Hunk_Alloc (sizeof(glpoly_t) + (lnumverts-4) * VERTEXSIZE*sizeof(float));
+	poly = (glpoly_t*) Hunk_Alloc (sizeof(glpoly_t) + (lnumverts-4) * VERTEXSIZE*sizeof(**poly->verts));
 	poly->next = fa->polys;
 	poly->flags = fa->flags;
 	fa->polys = poly;
@@ -1609,10 +1611,10 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 			vec = r_pcurrentvertbase[r_pedge->v[1]].position;
 		}
 		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
-		s /= fa->texinfo->texture->width;
+		// s /= fa->texinfo->texture->width;
 
 		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
-		t /= fa->texinfo->texture->height;
+		// t /= fa->texinfo->texture->height;
 
 		VectorCopy (vec, poly->verts[i]);
 		poly->verts[i][3] = s;
@@ -1645,8 +1647,8 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 		for (i = 0 ; i < lnumverts ; ++i)
 		{
 			vec3_t v1, v2;
-			float *prev, *cur, *next;
-			float f;
+			int16_t *prev, *cur, *next;
+			int16_t f;
 
 			prev = poly->verts[(i + lnumverts - 1) % lnumverts];
 			cur = poly->verts[i];
@@ -1658,10 +1660,7 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 			VectorNormalize( v2 );
 
 			// skip co-linear points
-			#define COLINEAR_EPSILON 0.001
-			if ((fabs( v1[0] - v2[0] ) <= COLINEAR_EPSILON) &&
-				(fabs( v1[1] - v2[1] ) <= COLINEAR_EPSILON) && 
-				(fabs( v1[2] - v2[2] ) <= COLINEAR_EPSILON))
+			if ((v1[0] - v2[0]) == 0 && (v1[1] - v2[1]) == 0 && (v1[2] - v2[2]) == 0)
 			{
 				int j;
 				for (j = i + 1; j < lnumverts; ++j)
@@ -1770,7 +1769,7 @@ void GL_BuildLightmaps (void)
 		currentmodel = m;
 		for (i=0 ; i<m->numsurfaces ; i++)
 		{
-			GL_CreateSurfaceLightmap (m->surfaces + i);
+			// GL_CreateSurfaceLightmap (m->surfaces + i);
 			if ( m->surfaces[i].flags & SURF_DRAWTURB )
 				continue;
 #ifndef QUAKE2

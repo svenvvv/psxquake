@@ -376,20 +376,20 @@ void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 	// gte_ncs();
 	// gte_strgb(&(poly->r0));
 
-	// setUVWH(poly,
-	// 	tex->rect.x * 2,
-	// 	tex->rect.y,
-	// 	tex->rect.w,
-	// 	tex->rect.h
-	// );
-	unsigned uv_tx = tex->rect.x * 2;
-	unsigned uv_ty = tex->rect.y;
-	setUV4(poly,
-		uv_tx + uv[0], uv_ty + uv[1],
-		uv_tx + uv[2], uv_ty + uv[3],
-		uv_tx + uv[4], uv_ty + uv[5],
-		uv_tx + uv[6], uv_ty + uv[7]
+	setUVWH(poly,
+		tex->rect.x * 2,
+		tex->rect.y,
+		tex->rect.w,
+		tex->rect.h
 	);
+	// unsigned uv_tx = tex->page->x + tex->rect.x * 2;
+	// unsigned uv_ty = tex->page->y + tex->rect.y;
+	// setUV4(poly,
+	// 	uv_tx + uv[0], uv_ty + uv[1],
+	// 	uv_tx + uv[2], uv_ty + uv[3],
+	// 	uv_tx + uv[4], uv_ty + uv[5],
+	// 	uv_tx + uv[6], uv_ty + uv[7]
+	// );
 	poly->tpage = tex->tpage;
 	poly->clut = psx_clut;
 

@@ -198,26 +198,27 @@ void EmitWaterPolys (msurface_t *fa)
 	int			i;
 	float		s, t, os, ot;
 
+	// TODO PSX
 
-	for (p=fa->polys ; p ; p=p->next)
-	{
-		glBegin (GL_POLYGON);
-		for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
-		{
-			os = v[3];
-			ot = v[4];
-
-			s = os + turbsin[(int)((ot*0.125+realtime) * TURBSCALE) & 255];
-			s *= (1.0/64);
-
-			t = ot + turbsin[(int)((os*0.125+realtime) * TURBSCALE) & 255];
-			t *= (1.0/64);
-
-			glTexCoord2f (s, t);
-			glVertex3fv (v);
-		}
-		glEnd ();
-	}
+	// for (p=fa->polys ; p ; p=p->next)
+	// {
+	// 	glBegin (GL_POLYGON);
+	// 	for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
+	// 	{
+	// 		os = v[3];
+	// 		ot = v[4];
+ //
+	// 		s = os + turbsin[(int)((ot*0.125+realtime) * TURBSCALE) & 255];
+	// 		s *= (1.0/64);
+ //
+	// 		t = ot + turbsin[(int)((os*0.125+realtime) * TURBSCALE) & 255];
+	// 		t *= (1.0/64);
+ //
+	// 		glTexCoord2f (s, t);
+	// 		glVertex3fv (v);
+	// 	}
+	// 	glEnd ();
+	// }
 }
 
 
@@ -237,29 +238,31 @@ void EmitSkyPolys (msurface_t *fa)
 	vec3_t	dir;
 	float	length;
 
-	for (p=fa->polys ; p ; p=p->next)
-	{
-		// glBegin (GL_POLYGON);
-		for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
-		{
-			VectorSubtract (v, r_origin, dir);
-			dir[2] *= 3;	// flatten the sphere
+	// TODO PSX
 
-			length = dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2];
-			length = sqrt (length);
-			length = 6*63/length;
-
-			dir[0] *= length;
-			dir[1] *= length;
-
-			s = (speedscale + dir[0]) * (1.0/128);
-			t = (speedscale + dir[1]) * (1.0/128);
-
-			glTexCoord2f (s, t);
-			glVertex3fv (v);
-		}
-		// glEnd ();
-	}
+	// for (p=fa->polys ; p ; p=p->next)
+	// {
+	// 	// glBegin (GL_POLYGON);
+	// 	for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
+	// 	{
+	// 		VectorSubtract (v, r_origin, dir);
+	// 		dir[2] *= 3;	// flatten the sphere
+ //
+	// 		length = dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2];
+	// 		length = sqrt (length);
+	// 		length = 6*63/length;
+ //
+	// 		dir[0] *= length;
+	// 		dir[1] *= length;
+ //
+	// 		s = (speedscale + dir[0]) * (1.0/128);
+	// 		t = (speedscale + dir[1]) * (1.0/128);
+ //
+	// 		glTexCoord2f (s, t);
+	// 		glVertex3fv (v);
+	// 	}
+	// 	// glEnd ();
+	// }
 }
 
 /*
