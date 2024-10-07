@@ -30,18 +30,10 @@ void psx_rb_init(void)
     SetDefDispEnv(&rb[0].disp, 0, 0, VID_WIDTH, VID_HEIGHT);
     SetDefDrawEnv(&rb[0].draw, 0, VID_HEIGHT, VID_WIDTH, VID_HEIGHT);
     psx_rb_draw_init(&rb[0].draw);
-    // Set clear color, area clear and dither processing
-    // setRGB0(&rb[0].draw, 63, 0, 127);
-    // rb[0].draw.isbg = 1;
-    // rb[0].draw.dtd = 1;
 
     SetDefDispEnv(&rb[1].disp, 0, VID_HEIGHT, VID_WIDTH, VID_HEIGHT);
     SetDefDrawEnv(&rb[1].draw, 0, 0, VID_WIDTH, VID_HEIGHT);
     psx_rb_draw_init(&rb[1].draw);
-    // Set clear color, area clear and dither processing
-    // setRGB0(&rb[1].draw, 63, 0, 127);
-    // rb[1].draw.isbg = 1;
-    // rb[1].draw.dtd = 1;
 
     PutDispEnv(&rb[0].disp);
     PutDrawEnv(&rb[0].draw);
@@ -54,7 +46,7 @@ void psx_rb_init(void)
 
 void psx_rb_present(void)
 {
-    printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
+    // printf("Frame pricount %d %d\n", pricount, (rb[psx_db].pribuf + sizeof(rb->pribuf)) - rb_nextpri);
     pricount = 0;
 
     // if (pricount > 400) {

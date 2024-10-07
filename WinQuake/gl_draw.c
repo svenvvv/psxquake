@@ -166,7 +166,7 @@ typedef struct cachepic_s
 	byte		padding[32];	// for appended glpic
 } cachepic_t;
 
-#define	MAX_CACHED_PICS		128
+#define	MAX_CACHED_PICS		64
 cachepic_t	menu_cachepics[MAX_CACHED_PICS];
 int			menu_numcachepics;
 
@@ -180,8 +180,8 @@ qpic_t *Draw_PicFromWad (char *name)
 	qpic_t	*p;
 	glpic_t	*gl;
 
-	p = W_GetLumpName (name);
-	gl = (glpic_t *)p->data;
+	p = (qpic_t*) W_GetLumpName (name);
+	gl = (glpic_t *) p->data;
 
 	// load little ones into the scrap
 	// if (p->width < 64 && p->height < 64)
@@ -379,7 +379,7 @@ void Draw_Init (void)
 	// by hand, because we need to write the version
 	// string into the background before turning
 	// it into a texture
-	draw_chars = W_GetLumpName ("conchars");
+	draw_chars = (byte*) W_GetLumpName ("conchars");
 	// for (i=0 ; i<256*64 ; i++)
 	// 	if (draw_chars[i] == 0)
 	// 		draw_chars[i] = 255;	// proper transparent color
@@ -412,7 +412,7 @@ void Draw_Init (void)
 	conback->height = vid.conheight;
 
  	// scale console to vid size
- 	dest = ncdata = Hunk_AllocName(vid.conwidth * vid.conheight, "conback");
+ 	dest = ncdata = (byte*) Hunk_AllocName(vid.conwidth * vid.conheight, "conback");
  
  	for (y=0 ; y<vid.conheight ; y++, dest += vid.conwidth)
  	{
@@ -495,11 +495,9 @@ void Draw_Character (int x, int y, int num)
 	row = num>>4;
 	col = num&15;
 
-	// printf("char tex %c %i %i\n", num, row, col);
-
 	tex = psx_vram_get(char_texture);
 
-	SPRT_8 * sprt = (void*)rb_nextpri;
+	SPRT_8 * sprt = (SPRT_8*)rb_nextpri;
 
 	setSprt8(sprt);
 	setXY0(sprt, x, y);
@@ -508,14 +506,12 @@ void Draw_Character (int x, int y, int num)
 	sprt->clut = psx_clut_transparent;
 
 	psx_add_prim(sprt, psx_zlevel++);
-	rb_nextpri = (void*)++sprt;
 
-	DR_TPAGE * tp = (void*)rb_nextpri;
+	DR_TPAGE * tp = (DR_TPAGE*)rb_nextpri;
 
 	setDrawTPage(tp, 0, 1, tex->tpage);
 
 	psx_add_prim(tp, psx_zlevel - 1);
-	rb_nextpri = (void*)++tp;
 }
 
 /*
@@ -550,6 +546,9 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 {
 	glpic_t			* gl = (glpic_t *)pic->data;
 	struct vram_texture const * tex = psx_vram_get(gl->texnum);
+	if (tex == NULL) {
+		Sys_Error("psx_Draw_Pic: null texture\n");
+	}
 
 	// TODO PSX split into multiple textures
 
@@ -557,7 +556,7 @@ void psx_Draw_Pic (int x, int y, qpic_t *pic, qboolean alpha)
 	// 	   tex->ident, x, y, pic->width, pic->height,
 	// 	   tex->rect.x, tex->rect.y, tex->rect.w, tex->rect.h, tex->tpage);
 
-	POLY_FT4 * poly = (void*)rb_nextpri;
+	POLY_FT4 * poly = (POLY_FT4*) rb_nextpri;
 
 	setPolyFT4(poly);
 	setXYWH(poly, x, y, pic->width, pic->height);
@@ -753,7 +752,7 @@ Draw_FadeScreen
 */
 void Draw_FadeScreen (void)
 {
-	POLY_F4 * poly = (void*)rb_nextpri;
+	POLY_F4 * poly = (POLY_F4*)rb_nextpri;
 
 	setPolyF4(poly);
 	setXYWH(poly, 0, 0, vid.width, vid.height);
@@ -1115,7 +1114,6 @@ GL_LoadTexture
 */
 int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha)
 {
-	static uint8_t scaled[2 * VRAM_PAGE_WIDTH * VRAM_PAGE_HEIGHT];
 	int div = 1;
 	struct vram_texture * tex;
 
@@ -1128,14 +1126,21 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	}
 
 	if (width > 2 * VRAM_PAGE_WIDTH || height > VRAM_PAGE_HEIGHT) {
-		int divw = (width + (VRAM_PAGE_WIDTH - 1)) / VRAM_PAGE_WIDTH;
-		int divh = (width + (VRAM_PAGE_HEIGHT - 1)) / VRAM_PAGE_HEIGHT;
+		int divw = (width) / VRAM_PAGE_WIDTH;
+		int divh = (height) / VRAM_PAGE_HEIGHT;
 		div = divw > divh ? divw : divh;
+	} else if (mipmap && width > 32 && height > 32) {
+		// Mipmapping is enabled on world textures, and we don't have enough VRAM for those,
+		// so let's use the mipmap arg to tell which textures to downsize.
+		div = 2;
+	}
+
+	if (div > 1) {
 		int neww = width / div;
 		int newh = height / div;
 
-		printf("Texture %s larger than texpage, scaling %ix%i down to %ix%i\n",
-			   identifier, width, height, neww, newh);
+		printf("Scaling tex %s %ix%i down to %ix%i (div %d)\n",
+			   identifier, width, height, neww, newh, div);
 
 		for (int y = 0; y < newh; ++y) {
 			for (int x = 0; x < neww; ++x) {
@@ -1143,19 +1148,24 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 				if (alpha && val == 0xFF) {
 					val = 0;
 				}
-				scaled[y * neww + x] = val;
+				data[y * neww + x] = val;
 			}
 		}
 
 		width = neww;
 		height = newh;
-		data = scaled;
 	} else if (alpha) {
 		for (int i = 0; i < width * height; ++i) {
 			if (data[i] == 0xFF) {
 				data[i] = 0;
 			}
 		}
+	}
+
+	// TODO unsure why this breaks load? even on emulators??
+	if (((width) * height / 2) % 16) {
+		printf("DMA-breaking tex %s (%dx%d), returning null\n", identifier, width, height);
+		return 0;
 	}
 
 	tex = psx_vram_pack (identifier, width, height);
@@ -1169,7 +1179,9 @@ int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolea
 	load_rect.y += tex->page->y;
 	load_rect.w /= 2;
 
-	LoadImage(&load_rect, (void*)data);
+	printf("GL_LoadTexture \"%s\" load rect %ix%i\n", identifier, load_rect.w, load_rect.h);
+
+	LoadImage(&load_rect, (uint32_t*)data);
 	tex->scale = div;
 	tex->is_alpha = alpha;
 

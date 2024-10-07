@@ -42,7 +42,7 @@ struct vram_texture * psx_vram_find (char * ident, int w, int h)
 		return NULL;
 	}
 
-	ident_hash = crc32(ident, strlen(ident));
+	ident_hash = crc32((uint8_t*)ident, strlen(ident));
 
 	for (int i = 0; i < vram_textures_count; ++i) {
 		struct vram_texture * tex = &vram_textures[i];
@@ -67,7 +67,6 @@ void psx_vram_rect(int x, int y, int w, int h)
 	setWH(fill, w, h);
 	setRGB0(fill, rand() % 0xFF, rand() % 0xFF, rand() % 0xFF);
 	psx_add_prim(fill, 0);
-	rb_nextpri = (void*)++fill;
 
 	psx_rb_present();
 }
@@ -114,19 +113,134 @@ void psx_vram_compact(struct vram_texpage * page)
 	);
 }
 
+
+struct vram_texture * allocate_and_split(int id, int w, int h,
+										 struct vram_texpage * page, RECT * rect)
+{
+	struct vram_texture * tex = vram_tex_alloc();
+	int remaining_w = rect->w - w;
+	int remaining_h = rect->h - h;
+
+	printf("VRAM: packing id=%d to %d;%d (%dx%d), abs vram %d;%d\n", id,
+			rect->x, rect->y, rect->w, rect->h, page->x + rect->x, page->y + rect->y);
+
+	tex->ident = id;
+	tex->rect.x = rect->x;
+	tex->rect.y = rect->y;
+	tex->rect.w = w * 2;
+	tex->rect.h = h;
+	tex->page = page;
+
+	// The framebuffer coordinates should be a multiple of 64 for the X axis and a multiple
+	// of 256 for the Y axis, the coordinates will be rounded down to the nearest lower
+	// multiple otherwise.
+	int tpx = (page->x + tex->rect.x) / 128;
+	tex->tpage = getTPage(1, 0,
+						  (tpx) * 128,
+						  page->y);
+	printf("tpx %d %d %d\n", tpx, page->y, tex->tpage);
+
+	// printf("Packed (%u) to %i;%i;%i;%i\n",
+	// 		id,
+	// 		page->x + rect->x,
+	// 		page->y + rect->y,
+	// 		rect->w, rect->h);
+
+	EnterCriticalSection();
+	page->textures[page->textures_count++] = tex;
+	ExitCriticalSection();
+	if (page->textures_count >= ARRAY_SIZE(page->textures)) {
+		Sys_Error("No more textures in page, %d\n", page->textures_count);
+	}
+
+	if (remaining_w == 0 && remaining_h == 0) {
+		printf("Discarding %i;%i;%i;%i, remaining %ix%i\n",
+				rect->x, rect->y,
+				rect->w, rect->h,
+				remaining_w, remaining_h);
+		// Discard if small
+		// memmove(page->rects + r, page->rects + r + 1,
+		// 		sizeof(*rect) * (page->rects_count - r));
+		// page->rects_count -= 1;
+		// psx_vram_rect(
+		// 	page->x + rect->x,
+		// 	page->y + rect->y,
+		// 	rect->w,
+		// 	rect->h
+		// );
+		memmove(rect, rect + 1,
+				(sizeof(*rect) * page->available_rects_count) - (rect - page->available_rects));
+		page->available_rects_count -= 1;
+	} else {
+		// Split available rect around the newly allocated texture
+		printf("Splitting %i;%i;%i;%i...\n",
+				rect->x, rect->y,
+				rect->w, rect->h);
+
+		// Right side left-overs
+		if (remaining_w > 0) {
+			rect->x += w;
+			rect->w -= w;
+			rect->h = h;
+			printf("...right %i;%i;%i;%i\n",
+				rect->x, rect->y,
+				rect->w, rect->h);
+			// psx_vram_rect(
+			// 	page->x + rect->x,
+			// 	page->y + rect->y,
+			// 	rect->w,
+			// 	rect->h
+			// );
+		}
+
+		// Bottom left-overs
+		if (remaining_h > 0) {
+			if (remaining_w > 0) {
+				// Allocate new rect for bottom
+				EnterCriticalSection();
+				rect = &page->available_rects[page->available_rects_count++];
+				ExitCriticalSection();
+				if (page->available_rects_count >= ARRAY_SIZE(page->available_rects)) {
+					Sys_Error("No more rects in page, %d\n", page->available_rects_count);
+				}
+			}
+			rect->x = tex->rect.x;
+			rect->y = tex->rect.y + h;
+			rect->w = remaining_w + w;
+			rect->h = remaining_h;
+			printf("...bottom %i;%i;%i;%i\n",
+				rect->x, rect->y,
+				rect->w, rect->h);
+			// psx_vram_rect(
+			// 	page->x + rect->x,
+			// 	page->y + rect->y,
+			// 	rect->w,
+			// 	rect->h
+			// );
+		}
+	}
+
+	return tex;
+}
+
 struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 {
 	uint32_t ident_hash = 0;
 	struct vram_texture * target_tex = NULL;
+	struct vram_texpage * candidate_page = NULL;
+	RECT * candidate_rect = NULL;
+	int candidate_remaining_h = 0;
 
 	if (ident[0]) {
-		ident_hash = crc32(ident, strlen(ident));
+		ident_hash = crc32((uint8_t*)ident, strlen(ident));
 	}
 
 	w /= 2;
 
 	for (int p = 0; p < ARRAY_SIZE(vram_pages); ++p) {
  		struct vram_texpage * page = &vram_pages[p];
+
+		// printf("Page %d avail %d\n", p, page->available_rects_count);
 
 		if (page->available_rects_count == 0) {
 			continue;
@@ -137,83 +251,32 @@ struct vram_texture * psx_vram_pack (char * ident, int w, int h)
 			int remaining_w = available_rect->w - w;
 			int remaining_h = available_rect->h - h;
 
-			// printf("packing \"%s\", remaining %i;%i\n", ident, remaining_w, remaining_h);
+			// printf("VRAM: packing \"%s\" (%dx%d), %dx%d remaining %i;%i\n", ident,
+			// 	   w, h,
+			// 	   available_rect->w, available_rect->h,
+			// 	   remaining_w, remaining_h);
 
 			if (remaining_w < 0 || remaining_h < 0) {
 				continue;
 			}
 
-			target_tex = vram_tex_alloc();
-			target_tex->ident = ident_hash;
-			target_tex->rect.x = available_rect->x;
-			target_tex->rect.y = available_rect->y;
-			target_tex->rect.w = w * 2;
-			target_tex->rect.h = h;
-			target_tex->page = page;
-			target_tex->tpage = getTPage(1, 0,
-										(page->x + target_tex->rect.x) / 128 * 128,
-										page->y + target_tex->rect.y);
-
-			printf("Packed %s (%u) to %i;%i;%i;%i\n",
-				   ident, ident_hash,
-					page->x + available_rect->x, page->y + available_rect->y,
-					available_rect->w, available_rect->h);
-
-			EnterCriticalSection();
- 			page->textures[page->textures_count++] = target_tex;
-			ExitCriticalSection();
-			if (page->textures_count >= ARRAY_SIZE(page->textures)) {
-				Sys_Error("No more textures in page\n");
+			// If our rect takes up more Y-space then candidate is better
+			if (candidate_rect && (remaining_h == 0 || candidate_remaining_h <= remaining_h)) {
+				continue;
 			}
 
-			if (remaining_w == 0 || remaining_h == 0) {
-				printf("Discarding %i;%i;%i;%i, remaining %ix%i\n",
-					   available_rect->x, available_rect->y,
-					   available_rect->w, available_rect->h,
-					   remaining_w, remaining_h);
-				// Discard if small
-				memmove(page->available_rects + r, page->available_rects + r + 1,
-						sizeof(*available_rect) * (page->available_rects_count - r));
-				page->available_rects_count -= 1;
-			} else {
-				// Split available rect around the newly allocated texture
-				printf("Splitting %i;%i;%i;%i...\n",
-					   available_rect->x, available_rect->y,
-					   available_rect->w, available_rect->h);
+			candidate_page = page;
+			candidate_rect = available_rect;
+			candidate_remaining_h = remaining_h;
 
-				// Right side left-overs
-				if (remaining_w > 0) {
-					available_rect->x += w;
-					available_rect->w -= w;
-					available_rect->h = h;
-					printf("...right %i;%i;%i;%i\n",
-						available_rect->x, available_rect->y,
-						available_rect->w, available_rect->h);
-				}
-
-				// Bottom left-overs
-				if (remaining_h > 0) {
-					if (remaining_w > 0) {
-						// Allocate new rect for bottom
-						EnterCriticalSection();
-						available_rect = &page->available_rects[page->available_rects_count++];
-						ExitCriticalSection();
-						if (page->available_rects_count >= ARRAY_SIZE(page->available_rects)) {
-							Sys_Error("No more available_rects in page\n");
-						}
-					}
-					available_rect->x = target_tex->rect.x;
-					available_rect->y = target_tex->rect.y + h;
-					available_rect->w = remaining_w + w;
-					available_rect->h = remaining_h;
-					printf("...bottom %i;%i;%i;%i\n",
-						available_rect->x, available_rect->y,
-						available_rect->w, available_rect->h);
-				}
-			}
-
-			goto exit;
+			printf("VRAM: selected page %d rect %d;%d (%dx%d)\n", p,
+				   candidate_rect->x, candidate_rect->y,
+				   candidate_rect->w, candidate_rect->h);
 		}
+	}
+
+	if (candidate_page) {
+		target_tex = allocate_and_split(ident_hash, w, h, candidate_page, candidate_rect);
 	}
 
 	// if (target_tex == NULL) {
