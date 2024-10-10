@@ -59,9 +59,8 @@ vec3_t	vpn;
 vec3_t	vright;
 vec3_t	r_origin;
 
-// float	r_world_matrix[16];
 MATRIX r_world_matrix = { 0 };
-// MATRIX r_base_world_matrix;
+MATRIX r_base_world_matrix;
 // float	r_base_world_matrix[16];
 
 //
@@ -85,7 +84,6 @@ void R_DrawParticles (void);
 void R_RenderDlights (void);
 void R_MarkLeaves (void);
 int R_LightPoint (vec3_t p);
-void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
 
 cvar_t	r_norefresh = {"r_norefresh","0"};
 cvar_t	r_drawentities = {"r_drawentities","1"};
@@ -160,11 +158,11 @@ void R_RotateForEntity (entity_t *e)
 	MATRIX ent_mtx = { 0 };
 
 	SVECTOR trot = {
-		int16_t(int(e->angles[2] * 1024) / 90),
-		int16_t(int(e->angles[0] * 1024) / 90),
-		int16_t(int(e->angles[1] * 1024) / 90),
+		int16_t(int(e->angles[2]) * 1024 / 90),
+		int16_t(int(e->angles[0]) * 1024 / 90),
+		int16_t(int(e->angles[1]) * 1024 / 90),
 	};
-	RotMatrix( &trot, &ent_mtx );
+	RotMatrix(&trot, &ent_mtx);
 
 	VECTOR tpos = {
 		int32_t(e->origin[0]),
@@ -175,10 +173,11 @@ void R_RotateForEntity (entity_t *e)
 
 	CompMatrixLV(&r_world_matrix, &ent_mtx, &ent_mtx);
 
-	PushMatrix();
+	VECTOR cam_scale = { -ONE / 10, ONE / 10, ONE / 10 };
+	ScaleMatrix(&ent_mtx, &cam_scale);
 
-	gte_SetRotMatrix(&ent_mtx);
 	gte_SetTransMatrix(&ent_mtx);
+	gte_SetRotMatrix(&ent_mtx);
 
     // glTranslatef (e->origin[0],  e->origin[1],  e->origin[2]);
     //
@@ -328,8 +327,8 @@ float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
 #include "anorms.h"
 };
 
-vec3_t	shadevector;
-float	shadelight, ambientlight;
+// vec3_t	shadevector;
+// float	shadelight, ambientlight;
 
 // precalculated dot products for quantized angles
 #define SHADEDOT_QUANT 16
@@ -341,8 +340,8 @@ float	*shadedots = r_avertexnormal_dots[0];
 
 int	lastposenum;
 
-void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
-				   struct vram_texture const * tex)
+int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
+				  uint8_t const uv[4 * 2], struct vram_texture const * tex)
 {
 	int gv;
 	POLY_FT4 * poly = (POLY_FT4 *) rb_nextpri;
@@ -352,8 +351,8 @@ void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 	gte_rtpt();
 	gte_nclip();
 	gte_stopz(&gv);
-	if (gv < 0) {
-		return;
+	if (gv > 0) {
+		return -1;
 	}
 
 	setPolyFT4(poly);
@@ -366,16 +365,18 @@ void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 	gte_avsz4();
 	gte_stotz(&gv);
 	if ((gv >> 2) > OT_LEN) {
-		return;
+		return -1;
 	}
 
 	gte_stsxy(&poly->x3);
 
-	// SVECTOR norm = 	{ 0, ONE, 0, 0 };
-	// gte_ldrgb(&(poly->r0));
-	// gte_ldv0(&norm);
-	// gte_ncs();
-	// gte_strgb(&(poly->r0));
+	gte_ldrgb(&poly->r0);
+	gte_ldv0(&normal);
+	gte_ncs();
+	gte_strgb(&poly->r0);
+
+	// uint8_t const ambient[] = { 255, 242, 230 };
+	// setRGB0(poly, 255, 242, 230);
 
 	setUVWH(poly,
 		tex->rect.x * 2,
@@ -383,24 +384,31 @@ void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
 		tex->rect.w,
 		tex->rect.h
 	);
-	// unsigned uv_tx = tex->page->x + tex->rect.x * 2;
-	// unsigned uv_ty = tex->page->y + tex->rect.y;
+	// int ux = 0; // tex->rect.x * 2;
+	// int uy = 0; // tex->rect.y;
 	// setUV4(poly,
-	// 	uv_tx + uv[0], uv_ty + uv[1],
-	// 	uv_tx + uv[2], uv_ty + uv[3],
-	// 	uv_tx + uv[4], uv_ty + uv[5],
-	// 	uv_tx + uv[6], uv_ty + uv[7]
+	// 	ux + uv[0], uy + uv[1],
+	// 	ux + uv[2], uy + uv[3],
+	// 	ux + uv[4], uy + uv[5],
+	// 	ux + uv[6], uy + uv[7]
 	// );
+	// printf("uv\n");
+	// printf(" %6d %6d\n", uv[0], uv[1]);
+	// printf(" %6d %6d\n", uv[2], uv[3]);
+	// printf(" %6d %6d\n", uv[4], uv[5]);
+	// printf(" %6d %6d\n", uv[6], uv[7]);
 	poly->tpage = tex->tpage;
 	poly->clut = psx_clut;
 
-	setRGB0(poly, 127, 127, 127);
+	// setRGB0(poly, 127, 127, 127);
 
 	// printf("tri %d %d %d => %d %d %d\n",
 	// 	  a->v[0], verts->v[1], verts->v[2],
 	// 	   poly->x0, poly->x1, poly->x2);
 
 	psx_add_prim_z(poly, gv >> 2);
+
+	return gv >> 2;
 }
 
 void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
@@ -655,67 +663,67 @@ void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum)
 GL_DrawAliasShadow
 =============
 */
-extern	vec3_t			lightspot;
-
-void GL_DrawAliasShadow (aliashdr_t *paliashdr, int posenum)
-{
-	float	s, t, l;
-	int		i, j;
-	int		index;
-	trivertx_t	*v, *verts;
-	int		list;
-	int		*order;
-	vec3_t	point;
-	float	*normal;
-	float	height, lheight;
-	int		count;
-
-	lheight = currententity->origin[2] - lightspot[2];
-
-	height = 0;
-	verts = (trivertx_t *)((byte *)paliashdr + paliashdr->posedata);
-	verts += posenum * paliashdr->poseverts;
-	order = (int *)((byte *)paliashdr + paliashdr->commands);
-
-	height = -lheight + 1.0;
-
-	while (1)
-	{
-		// get the vertex count and primitive type
-		count = *order++;
-		if (!count)
-			break;		// done
-		if (count < 0)
-		{
-			count = -count;
-			glBegin (GL_TRIANGLE_FAN);
-		}
-		else
-			glBegin (GL_TRIANGLE_STRIP);
-
-		do
-		{
-			// texture coordinates come from the draw list
-			// (skipped for shadows) glTexCoord2fv ((float *)order);
-			order += 2;
-
-			// normals and vertexes come from the frame list
-			point[0] = verts->v[0] * paliashdr->scale[0] + paliashdr->scale_origin[0];
-			point[1] = verts->v[1] * paliashdr->scale[1] + paliashdr->scale_origin[1];
-			point[2] = verts->v[2] * paliashdr->scale[2] + paliashdr->scale_origin[2];
-
-			point[0] -= shadevector[0]*(point[2]+lheight);
-			point[1] -= shadevector[1]*(point[2]+lheight);
-			point[2] = height;
-//			height -= 0.001;
-			glVertex3fv (point);
-
-			verts++;
-		} while (--count);
-
-		glEnd ();
-	}	
-}
+//extern	vec3_t			lightspot;
+//
+//void GL_DrawAliasShadow (aliashdr_t *paliashdr, int posenum)
+//{
+//	float	s, t, l;
+//	int		i, j;
+//	int		index;
+//	trivertx_t	*v, *verts;
+//	int		list;
+//	int		*order;
+//	vec3_t	point;
+//	float	*normal;
+//	float	height, lheight;
+//	int		count;
+//
+//	lheight = currententity->origin[2] - lightspot[2];
+//
+//	height = 0;
+//	verts = (trivertx_t *)((byte *)paliashdr + paliashdr->posedata);
+//	verts += posenum * paliashdr->poseverts;
+//	order = (int *)((byte *)paliashdr + paliashdr->commands);
+//
+//	height = -lheight + 1.0;
+//
+//	while (1)
+//	{
+//		// get the vertex count and primitive type
+//		count = *order++;
+//		if (!count)
+//			break;		// done
+//		if (count < 0)
+//		{
+//			count = -count;
+//			glBegin (GL_TRIANGLE_FAN);
+//		}
+//		else
+//			glBegin (GL_TRIANGLE_STRIP);
+//
+//		do
+//		{
+//			// texture coordinates come from the draw list
+//			// (skipped for shadows) glTexCoord2fv ((float *)order);
+//			order += 2;
+//
+//			// normals and vertexes come from the frame list
+//			point[0] = verts->v[0] * paliashdr->scale[0] + paliashdr->scale_origin[0];
+//			point[1] = verts->v[1] * paliashdr->scale[1] + paliashdr->scale_origin[1];
+//			point[2] = verts->v[2] * paliashdr->scale[2] + paliashdr->scale_origin[2];
+//
+//			point[0] -= shadevector[0]*(point[2]+lheight);
+//			point[1] -= shadevector[1]*(point[2]+lheight);
+//			point[2] = height;
+////			height -= 0.001;
+//			glVertex3fv (point);
+//
+//			verts++;
+//		} while (--count);
+//
+//		glEnd ();
+//	}
+//}
 
 
 
@@ -786,54 +794,54 @@ void R_DrawAliasModel (entity_t *e)
 	// get lighting information
 	//
 
-	ambientlight = shadelight = R_LightPoint (currententity->origin);
-
-	// allways give the gun some light
-	if (e == &cl.viewent && ambientlight < 24)
-		ambientlight = shadelight = 24;
-
-	for (lnum=0 ; lnum<MAX_DLIGHTS ; lnum++)
-	{
-		if (cl_dlights[lnum].die >= cl.time)
-		{
-			VectorSubtract (currententity->origin,
-							cl_dlights[lnum].origin,
-							dist);
-			add = cl_dlights[lnum].radius - Length(dist);
-
-			if (add > 0) {
-				ambientlight += add;
-				//ZOID models should be affected by dlights as well
-				shadelight += add;
-			}
-		}
-	}
-
-	// clamp lighting so it doesn't overbright as much
-	if (ambientlight > 128)
-		ambientlight = 128;
-	if (ambientlight + shadelight > 192)
-		shadelight = 192 - ambientlight;
-
-	// ZOID: never allow players to go totally black
-	i = currententity - cl_entities;
-	if (i >= 1 && i<=cl.maxclients /* && !strcmp (currententity->model->name, "progs/player.mdl") */)
-		if (ambientlight < 8)
-			ambientlight = shadelight = 8;
-
-	// HACK HACK HACK -- no fullbright colors, so make torches full light
-	if (!strcmp (clmodel->name, "progs/flame2.mdl")
-		|| !strcmp (clmodel->name, "progs/flame.mdl") )
-		ambientlight = shadelight = 256;
-
-	shadedots = r_avertexnormal_dots[((int)(e->angles[1] * (SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1)];
-	shadelight = shadelight / 200.0;
-	
-	an = e->angles[1]/180*M_PI;
-	shadevector[0] = cos(-an);
-	shadevector[1] = sin(-an);
-	shadevector[2] = 1;
-	VectorNormalize (shadevector);
+	// ambientlight = shadelight = R_LightPoint (currententity->origin);
+ //
+	// // allways give the gun some light
+	// if (e == &cl.viewent && ambientlight < 24)
+	// 	ambientlight = shadelight = 24;
+ //
+	// for (lnum=0 ; lnum<MAX_DLIGHTS ; lnum++)
+	// {
+	// 	if (cl_dlights[lnum].die >= cl.time)
+	// 	{
+	// 		VectorSubtract (currententity->origin,
+	// 						cl_dlights[lnum].origin,
+	// 						dist);
+	// 		add = cl_dlights[lnum].radius - Length(dist);
+ //
+	// 		if (add > 0) {
+	// 			ambientlight += add;
+	// 			//ZOID models should be affected by dlights as well
+	// 			shadelight += add;
+	// 		}
+	// 	}
+	// }
+ //
+	// // clamp lighting so it doesn't overbright as much
+	// if (ambientlight > 128)
+	// 	ambientlight = 128;
+	// if (ambientlight + shadelight > 192)
+	// 	shadelight = 192 - ambientlight;
+ //
+	// // ZOID: never allow players to go totally black
+	// i = currententity - cl_entities;
+	// if (i >= 1 && i<=cl.maxclients /* && !strcmp (currententity->model->name, "progs/player.mdl") */)
+	// 	if (ambientlight < 8)
+	// 		ambientlight = shadelight = 8;
+ //
+	// // HACK HACK HACK -- no fullbright colors, so make torches full light
+	// if (!strcmp (clmodel->name, "progs/flame2.mdl")
+	// 	|| !strcmp (clmodel->name, "progs/flame.mdl") )
+	// 	ambientlight = shadelight = 256;
+ //
+	// shadedots = r_avertexnormal_dots[((int)(e->angles[1] * (SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1)];
+	// shadelight = shadelight / 200.0;
+	//
+	// an = e->angles[1]/180*M_PI;
+	// shadevector[0] = cos(-an);
+	// shadevector[1] = sin(-an);
+	// shadevector[2] = 1;
+	// VectorNormalize (shadevector);
 
 	//
 	// locate the proper data
@@ -996,22 +1004,22 @@ void R_DrawViewModel (void)
 	ambientlight = j;
 	shadelight = j;
 
-// add dynamic lights		
-	for (lnum=0 ; lnum<MAX_DLIGHTS ; lnum++)
-	{
-		dl = &cl_dlights[lnum];
-		if (!dl->radius)
-			continue;
-		if (!dl->radius)
-			continue;
-		if (dl->die < cl.time)
-			continue;
-
-		VectorSubtract (currententity->origin, dl->origin, dist);
-		add = dl->radius - Length(dist);
-		if (add > 0)
-			ambientlight += add;
-	}
+	// add dynamic lights
+	// for (lnum=0 ; lnum<MAX_DLIGHTS ; lnum++)
+	// {
+	// 	dl = &cl_dlights[lnum];
+	// 	if (!dl->radius)
+	// 		continue;
+	// 	if (!dl->radius)
+	// 		continue;
+	// 	if (dl->die < cl.time)
+	// 		continue;
+ //
+	// 	VectorSubtract (currententity->origin, dl->origin, dist);
+	// 	add = dl->radius - Length(dist);
+	// 	if (add > 0)
+	// 		ambientlight += add;
+	// }
 
 	ambient[0] = ambient[1] = ambient[2] = ambient[3] = (float)ambientlight / 128;
 	diffuse[0] = diffuse[1] = diffuse[2] = diffuse[3] = (float)shadelight / 128;
@@ -1167,6 +1175,13 @@ void MYgluPerspective( GLdouble fovy, GLdouble aspect,
    glFrustum( xmin, xmax, ymin, ymax, zNear, zFar );
 }
 
+static inline void print_matrix(MATRIX const * mtx)
+{
+	printf(" %8d %8d %8d %8d\n", mtx->m[0][0], mtx->m[0][1], mtx->m[0][2], mtx->t[0]);
+	printf(" %8d %8d %8d %8d\n", mtx->m[1][0], mtx->m[1][1], mtx->m[1][2], mtx->t[1]);
+	printf(" %8d %8d %8d %8d\n", mtx->m[2][0], mtx->m[2][1], mtx->m[2][2], mtx->t[2]);
+}
+
 /*
 =============
 R_SetupGL
@@ -1174,9 +1189,9 @@ R_SetupGL
 */
 void R_SetupGL (void)
 {
-	float	screenaspect;
-	float	yfov;
-	int		i;
+	// float	screenaspect;
+	// float	yfov;
+	// int		i;
 	// extern	int glwidth, glheight;
 	// int		x, x2, y2, y, w, h;
 
@@ -1232,7 +1247,7 @@ void R_SetupGL (void)
 	};
 	RotMatrix(&trot, &r_world_matrix);
 
-	VECTOR cam_scale = { 10 * ONE, 10 * ONE, 10 * ONE };
+	VECTOR cam_scale = { -10 * ONE, 10 * ONE, 10 * ONE };
 	ScaleMatrixL(&r_world_matrix, &cam_scale);
 
 	VECTOR tpos = {
@@ -1241,11 +1256,45 @@ void R_SetupGL (void)
 		-int32_t(r_refdef.vieworg[2])
 	};
 	ApplyMatrixLV(&r_world_matrix, &tpos, &tpos);
-
 	TransMatrix(&r_world_matrix, &tpos);
+
+	// MATRIX flip = { 0 };
+	// flip.m[0][0] = ONE;
+	// flip.m[1][1] = -ONE;
+	// flip.m[2][2] = ONE;
+	// MulMatrix0(&r_world_matrix, &flip, &r_world_matrix);
+
+	MATRIX color_mtx = { 0 };
+	MATRIX light_mtx = { 0 };
+	for (int lnum = 0; lnum < MAX_DLIGHTS; ++lnum) {
+		auto & l = cl_dlights[lnum];
+		if (l.die >= cl.time) {
+			// int vect[3];
+			// VectorSubtract (l.origin, r_refdef.vieworg, vect);
+			// printf("dlight %d %d %d\n", lnum, l.radius);
+			light_mtx.m[lnum][0] = (int)l.origin[0];
+			light_mtx.m[lnum][1] = (int)l.origin[1];
+			light_mtx.m[lnum][2] = (int)l.origin[2];
+
+			color_mtx.m[0][lnum] = l.color[0];
+			color_mtx.m[0][lnum] = l.color[1];
+			color_mtx.m[0][lnum] = l.color[2];
+		}
+	}
+
+	// Ambient light
+	light_mtx.m[2][0] = ONE / 2;
+	light_mtx.m[2][1] = ONE / 2;
+	light_mtx.m[2][2] = ONE / 2;
+	color_mtx.m[0][2] = DLIGHT_COLOR(255)/ 2;
+	color_mtx.m[1][2] = DLIGHT_COLOR(242) / 2;
+	color_mtx.m[2][2] = DLIGHT_COLOR(230) / 2;
 
 	gte_SetRotMatrix(&r_world_matrix);
 	gte_SetTransMatrix(&r_world_matrix);
+
+	gte_SetLightMatrix(&light_mtx);
+	gte_SetColorMatrix(&color_mtx);
 
 	// glMatrixMode(GL_MODELVIEW);
  //    glLoadIdentity ();

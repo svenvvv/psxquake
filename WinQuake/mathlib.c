@@ -205,39 +205,42 @@ int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, mplane_t *p)
 #endif
 	
 // general case
+	float n0 = p->normal[0];
+	float n1 = p->normal[1];
+	float n2 = p->normal[2];
 	switch (p->signbits)
 	{
 	case 0:
-dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
-dist2 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
+		dist1 = n0*emaxs[0] + n1*emaxs[1] + n2*emaxs[2];
+		dist2 = n0*emins[0] + n1*emins[1] + n2*emins[2];
 		break;
 	case 1:
-dist1 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
-dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
+		dist1 = n0*emins[0] + n1*emaxs[1] + n2*emaxs[2];
+		dist2 = n0*emaxs[0] + n1*emins[1] + n2*emins[2];
 		break;
 	case 2:
-dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
-dist2 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
+		dist1 = n0*emaxs[0] + n1*emins[1] + n2*emaxs[2];
+		dist2 = n0*emins[0] + n1*emaxs[1] + n2*emins[2];
 		break;
 	case 3:
-dist1 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
-dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
+		dist1 = n0*emins[0] + n1*emins[1] + n2*emaxs[2];
+		dist2 = n0*emaxs[0] + n1*emaxs[1] + n2*emins[2];
 		break;
 	case 4:
-dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
-dist2 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
+		dist1 = n0*emaxs[0] + n1*emaxs[1] + n2*emins[2];
+		dist2 = n0*emins[0] + n1*emins[1] + n2*emaxs[2];
 		break;
 	case 5:
-dist1 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
-dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
+		dist1 = n0*emins[0] + n1*emaxs[1] + n2*emins[2];
+		dist2 = n0*emaxs[0] + n1*emins[1] + n2*emaxs[2];
 		break;
 	case 6:
-dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
-dist2 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
+		dist1 = n0*emaxs[0] + n1*emins[1] + n2*emins[2];
+		dist2 = n0*emins[0] + n1*emaxs[1] + n2*emaxs[2];
 		break;
 	case 7:
-dist1 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
-dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
+		dist1 = n0*emins[0] + n1*emins[1] + n2*emins[2];
+		dist2 = n0*emaxs[0] + n1*emaxs[1] + n2*emaxs[2];
 		break;
 	default:
 		dist1 = dist2 = 0;		// shut up compiler
@@ -373,10 +376,8 @@ vec_t Length(vec3_t v)
 {
 	int		i;
 	float	length;
-	
-	length = 0;
-	for (i=0 ; i< 3 ; i++)
-		length += v[i]*v[i];
+
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	length = sqrt (length);		// FIXME
 
 	return length;

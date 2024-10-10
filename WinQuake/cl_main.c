@@ -373,7 +373,7 @@ void CL_DecayLights (void)
 		if (dl->die < cl.time || !dl->radius)
 			continue;
 		
-		dl->radius -= time*dl->decay;
+		dl->radius -= (time*dl->decay) / MS_PER_S;
 		if (dl->radius < 0)
 			dl->radius = 0;
 	}
@@ -547,6 +547,9 @@ void CL_RelinkEntities (void)
 			AngleVectors (ent->angles, fv, rv, uv);
 			 
 			VectorMA (dl->origin, 18, fv, dl->origin);
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(230);
+			dl->color[2] = DLIGHT_COLOR(153);
 			dl->radius = 200 + (rand()&31);
 			dl->minlight = 32;
 			dl->die = cl.time + 100;
@@ -556,6 +559,9 @@ void CL_RelinkEntities (void)
 			dl = CL_AllocDlight (i);
 			VectorCopy (ent->origin,  dl->origin);
 			dl->origin[2] += 16;
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(230);
+			dl->color[2] = DLIGHT_COLOR(153);
 			dl->radius = 400 + (rand()&31);
 			dl->die = cl.time + 1;
 		}
@@ -563,6 +569,9 @@ void CL_RelinkEntities (void)
 		{			
 			dl = CL_AllocDlight (i);
 			VectorCopy (ent->origin,  dl->origin);
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(230);
+			dl->color[2] = DLIGHT_COLOR(153);
 			dl->radius = 200 + (rand()&31);
 			dl->die = cl.time + 1;
 		}
@@ -571,6 +580,9 @@ void CL_RelinkEntities (void)
 		{			
 			dl = CL_AllocDlight (i);
 			VectorCopy (ent->origin,  dl->origin);
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(230);
+			dl->color[2] = DLIGHT_COLOR(153);
 			dl->radius = 200.0 + (rand()&31);
 			dl->die = cl.time + 1;
 			dl->dark = true;
@@ -579,6 +591,9 @@ void CL_RelinkEntities (void)
 		{			
 			dl = CL_AllocDlight (i);
 			VectorCopy (ent->origin,  dl->origin);
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(230);
+			dl->color[2] = DLIGHT_COLOR(153);
 			dl->radius = 200;
 			dl->die = cl.time + 1;
 		}
@@ -596,6 +611,9 @@ void CL_RelinkEntities (void)
 		{
 			R_RocketTrail (oldorg, ent->origin, 0);
 			dl = CL_AllocDlight (i);
+			dl->color[0] = DLIGHT_COLOR(255);
+			dl->color[1] = DLIGHT_COLOR(153);
+			dl->color[2] = DLIGHT_COLOR(153);
 			VectorCopy (ent->origin, dl->origin);
 			dl->radius = 200;
 			dl->die = cl.time + 1;

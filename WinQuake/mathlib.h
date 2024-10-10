@@ -38,7 +38,7 @@ extern	int nanmask;
 
 #define	IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
 
-#define DotProduct(x,y) (x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
+#define DotProduct(x,y) (x[0]*float(y[0])+x[1]*float(y[1])+x[2]*float(y[2]))
 #define VectorSubtract(a,b,c) {c[0]=a[0]-b[0];c[1]=a[1]-b[1];c[2]=a[2]-b[2];}
 #define VectorAdd(a,b,c) {c[0]=a[0]+b[0];c[1]=a[1]+b[1];c[2]=a[2]+b[2];}
 #define VectorCopy(a,b) {b[0]=a[0];b[1]=a[1];b[2]=a[2];}
@@ -58,6 +58,28 @@ void VectorInverse (vec3_t v);
 void VectorScale (vec3_t in, vec_t scale, vec3_t out);
 int Q_log2(int val);
 
+/* by Jim Ulery */
+static size_t isqrt(size_t val) {
+    unsigned long temp, g=0, b = 0x8000, bshft = 15;
+    do {
+        if (val >= (temp = (((g << 1) + b)<<bshft--))) {
+           g += b;
+           val -= temp;
+        }
+    } while (b >>= 1);
+    return g;
+}
+
+static inline size_t Length(int v[3])
+{
+	size_t	length;
+
+	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+	length = isqrt (length);		// FIXME
+
+	return length;
+}
+
 void R_ConcatRotations (float in1[3][3], float in2[3][3], float out[3][3]);
 void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4]);
 
@@ -70,7 +92,14 @@ void AngleVectors (vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 float	anglemod(float a);
 
+void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
 
+static inline void RotatePointAroundVector( int8_t dst[3], const vec3_t dir, const vec3_t point, float degrees )
+{
+	vec3_t fdst;
+	RotatePointAroundVector(fdst, dir, point, degrees);
+	VectorCopy(fdst, dst);
+}
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)	\
 	(((p)->type < 3)?						\

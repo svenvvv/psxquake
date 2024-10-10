@@ -68,14 +68,19 @@ typedef struct
 
 #define	SIGNONS		4			// signon messages to receive before connected
 
-#define	MAX_DLIGHTS		32
+#define	MAX_DLIGHTS		2 // PSX has three lights, the last one is reserved for ambient
+
+#include <psxgte.h>
+
+#define DLIGHT_COLOR(v) ((ONE / 255) * (v))
 typedef struct
 {
 	vec3_t	origin;
-	float	radius;
+	int16_t	radius;
+	int16_t color[3];
 	uint32_t	die;				// stop lighting after this time
-	float	decay;				// drop this each second
-	float	minlight;			// don't add when contributing less
+	int16_t	decay;				// drop this each second
+	int16_t	minlight;			// don't add when contributing less
 	int		key;
 #ifdef QUAKE2
 	qboolean	dark;			// subtracts light instead of adding

@@ -100,7 +100,7 @@ typedef struct
 	int			dataofs[4];		// [nummiptex]
 } dmiptexlump_t;
 
-#define	MIPLEVELS	4
+#define	MIPLEVELS	0
 typedef struct miptex_s
 {
 	char		name[16];

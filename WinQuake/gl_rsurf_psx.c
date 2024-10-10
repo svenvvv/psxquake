@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <psxgpu.h>
 #include <psxgte.h>
 #include <inline_c.h>
+#include <limits.h>
 
 
 
@@ -294,26 +295,26 @@ void DrawGLWaterPolyLightmap (glpoly_t *p);
 lpMTexFUNC qglMTexCoord2fSGIS = NULL;
 lpSelTexFUNC qglSelectTextureSGIS = NULL;
 
-qboolean mtexenabled = false;
+// qboolean mtexenabled = false;
 
-void GL_SelectTexture (GLenum target);
+// void GL_SelectTexture (GLenum target);
 
 void GL_DisableMultitexture(void) 
 {
-	if (mtexenabled) {
-		glDisable(GL_TEXTURE_2D);
-		GL_SelectTexture(TEXTURE0_SGIS);
-		mtexenabled = false;
-	}
+	// if (mtexenabled) {
+	// 	glDisable(GL_TEXTURE_2D);
+	// 	GL_SelectTexture(TEXTURE0_SGIS);
+	// 	mtexenabled = false;
+	// }
 }
 
 void GL_EnableMultitexture(void) 
 {
-	if (gl_mtexable) {
-		GL_SelectTexture(TEXTURE1_SGIS);
-		glEnable(GL_TEXTURE_2D);
-		mtexenabled = true;
-	}
+	// if (gl_mtexable) {
+	// 	GL_SelectTexture(TEXTURE1_SGIS);
+	// 	glEnable(GL_TEXTURE_2D);
+	// 	mtexenabled = true;
+	// }
 }
 
 #if 0
@@ -714,23 +715,42 @@ void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
 void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
 				   struct vram_texture const * tex);
 void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
-void draw_quad_tex(SVECTOR const verts[4], uint8_t const uv[4 * 2],
-				   struct vram_texture const * tex);
+int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
+				  uint8_t const uv[4 * 2], struct vram_texture const * tex);
 
 static inline void loadVerts(SVECTOR & out, int16_t const verts[3])
 {
 	out = { verts[0], verts[1], verts[2] };
 }
 
-void DrawGLPoly (glpoly_t *p, int texturenum)
+void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 {
 	SVECTOR verts[4];
 	uint8_t uv[4 * 2];
-	CVECTOR color = { uint8_t(rand()), uint8_t(rand()), uint8_t(rand()) };
+	// CVECTOR color = { uint8_t(rand()), uint8_t(rand()), uint8_t(rand()) };
+	CVECTOR color = { 128, 128, 0 };
+	SVECTOR normal = {
+		int16_t(plane->normal[0] > 0 ? ONE : 0),
+		int16_t(plane->normal[1] > 0 ? ONE : 0),
+		int16_t(plane->normal[2] > 0 ? ONE : 0),
+		int16_t(0)
+	};
 
 	struct vram_texture * tex = psx_vram_get(texturenum);
 
 	if (p->numverts % 4 == 0) {
+		int gv;
+		int gv_max = INT_MAX;
+		int gv_min = INT_MIN;
+
+		// DR_TWIN * twin = (DR_TWIN*) rb_nextpri;
+  //
+		// RECT win = tex->rect;
+		// win.x += tex->page->x * 2;
+		// win.y += tex->page->y;
+		// setTexWindow(twin, &win);
+		// psx_add_prim_z(twin, 1023);
+
 		for (int off = 0; (p->numverts - off) > 0; off += 4) {
 			loadVerts(verts[0], p->verts[off + 0]);
 			uv[0] = p->verts[off + 0][3];
@@ -747,8 +767,24 @@ void DrawGLPoly (glpoly_t *p, int texturenum)
 			loadVerts(verts[1], p->verts[off + 3]);
 			uv[2] = p->verts[off + 3][3];
 			uv[3] = p->verts[off + 3][4];
-			draw_quad_tex(verts, uv, tex);
+			gv = draw_quad_tex(verts, normal, uv, tex);
+			if (gv > 0) {
+				if (gv > gv_max) {
+					gv_max = gv;
+				} else if (gv < gv_min) {
+					gv_min = gv;
+				}
+			}
+			// draw_quad(verts, &color);
 		}
+
+		// twin = (DR_TWIN*) rb_nextpri;
+		// win.x = 0;
+		// win.y = 0;
+		// win.w = 0;
+		// win.h = 0;
+		// setTexWindow(twin, &win);
+		// psx_add_prim_z(twin, gv_min);
 	} else if (p->numverts % 3 == 0) {
 		for (int off = 0; (p->numverts - off) > 0; off += 3) {
 			loadVerts(verts[2], p->verts[off + 0]);
@@ -892,7 +928,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 	if (fa->flags & SURF_UNDERWATER)
 		DrawGLWaterPoly (fa->polys);
 	else
-		DrawGLPoly (fa->polys, t->gl_texturenum);
+		DrawGLPoly (fa->polys, t->gl_texturenum, fa->plane);
 
 	// add the poly to the proper lightmap chain
 
@@ -1579,7 +1615,7 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 	int			vertpage, newverts, newpage, lastvert;
 	qboolean	visible;
 	float		*vec;
-	float		s, t;
+	int			s, t;
 	glpoly_t	*poly;
 
 // reconstruct the polygon
@@ -1596,6 +1632,16 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 	fa->polys = poly;
 	poly->numverts = lnumverts;
 
+	int tex_scale = 1;
+	struct vram_texture const * psx_tex = psx_vram_get(fa->texinfo->texture->gl_texturenum);
+	if (psx_tex != nullptr) {
+		tex_scale = psx_tex->scale;
+	}
+
+	printf("Tex scale %d at %d %d (%dx%d)\n", psx_tex->scale,
+		   psx_tex->rect.x, psx_tex->rect.y,
+		   psx_tex->rect.w, psx_tex->rect.h);
+
 	for (i=0 ; i<lnumverts ; i++)
 	{
 		lindex = currentmodel->surfedges[fa->firstedge + i];
@@ -1610,11 +1656,40 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 			r_pedge = &pedges[-lindex];
 			vec = r_pcurrentvertbase[r_pedge->v[1]].position;
 		}
-		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+
+		int os, ot;
+		os = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s = os;
 		// s /= fa->texinfo->texture->width;
 
-		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		// TODO PSX remove this block when texture windows are implemented
+		int sw = fa->texinfo->texture->width / tex_scale;
+		// int sw = psx_tex->rect.w;
+		s %= sw;
+		if (s < 0) {
+			s += sw;
+		}
+
+		s /= tex_scale;
+		s += psx_tex->rect.x * 2;
+
+		ot = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t = ot;
 		// t /= fa->texinfo->texture->height;
+
+		// TODO PSX remove this block when texture windows are implemented
+		int sh = fa->texinfo->texture->height / (tex_scale);
+		// int sh = psx_tex->rect.h;
+		t %= sh;
+		if (t < 0) {
+			t += sh;
+		}
+
+		t /= tex_scale;
+		t += psx_tex->rect.y;
+
+		printf("UV %d %d -> %d %d\n", os, ot, s, t);
+
 
 		VectorCopy (vec, poly->verts[i]);
 		poly->verts[i][3] = s;
@@ -1623,17 +1698,17 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 		//
 		// lightmap texture coordinates
 		//
-		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
-		s -= fa->texturemins[0];
-		s += fa->light_s*16;
-		s += 8;
-		s /= BLOCK_WIDTH*16; //fa->texinfo->texture->width;
-
-		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
-		t -= fa->texturemins[1];
-		t += fa->light_t*16;
-		t += 8;
-		t /= BLOCK_HEIGHT*16; //fa->texinfo->texture->height;
+		// s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		// s -= fa->texturemins[0];
+		// s += fa->light_s*16;
+		// s += 8;
+		// s /= BLOCK_WIDTH*16; //fa->texinfo->texture->width;
+  //
+		// t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		// t -= fa->texturemins[1];
+		// t += fa->light_t*16;
+		// t += 8;
+		// t /= BLOCK_HEIGHT*16; //fa->texinfo->texture->height;
 
 		poly->verts[i][5] = s;
 		poly->verts[i][6] = t;

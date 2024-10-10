@@ -21,9 +21,18 @@
 #define OT_LEN 		(1 * 1024)
 #define PRIBUF_LEN 	(128 * 1024)
 
+typedef struct DISPENV_CACHE_S
+{
+	uint32_t fb_pos;
+    uint32_t h_range;
+    uint32_t v_range;
+    uint32_t mode;
+} DISPENV_CACHE;
+
 struct PQRenderBuf
 {
 	DISPENV disp;
+	DISPENV_CACHE disp_cache;
 	DRAWENV draw;
 	uint32_t ot[OT_LEN];
 	uint8_t pribuf[PRIBUF_LEN];
@@ -115,9 +124,9 @@ static inline void psx_add_prim_z(T * prim, int z)
     extern int pricount;
     extern struct PQRenderBuf rb[2];
 
-	if (pricount > 1000) {
-		return;
-	}
+	// if (pricount > 1000) {
+	// 	return;
+	// }
 
 	pricount += 1;
 

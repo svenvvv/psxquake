@@ -41,7 +41,7 @@ byte	mod_novis[MAX_MAP_LEAFS/8];
 model_t	mod_known[MAX_MOD_KNOWN];
 int		mod_numknown;
 
-cvar_t gl_subdivide_size = {"gl_subdivide_size", "128", true};
+cvar_t gl_subdivide_size = {"gl_subdivide_size", "64", true};
 
 /*
 ===============
@@ -799,7 +799,7 @@ void Mod_LoadFaces (lump_t *l)
 			out->samples = NULL;
 		else
 			out->samples = loadmodel->lightdata + i;
-		
+
 	// set the drawing flags flag
 		
 		if (!Q_strncmp(out->texinfo->texture->name,"sky",3))	// sky
@@ -809,9 +809,7 @@ void Mod_LoadFaces (lump_t *l)
 			GL_SubdivideSurface (out);	// cut up polygon for warps
 #endif
 			continue;
-		}
-		
-		if (!Q_strncmp(out->texinfo->texture->name,"*",1))		// turbulent
+		} else if (!Q_strncmp(out->texinfo->texture->name,"*",1))		// turbulent
 		{
 			out->flags |= (SURF_DRAWTURB | SURF_DRAWTILED);
 			for (i=0 ; i<2 ; i++)
@@ -822,6 +820,7 @@ void Mod_LoadFaces (lump_t *l)
 			GL_SubdivideSurface (out);	// cut up polygon for warps
 			continue;
 		}
+
 
 	}
 }
@@ -1771,7 +1770,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 
 	size = sizeof (msprite_t) +	(numframes - 1) * sizeof (psprite->frames);
 
-	psprite = Hunk_AllocName (size, loadname);
+	psprite = (msprite_t*) Hunk_AllocName (size, loadname);
 
 	mod->cache.data = psprite;
 
@@ -1779,7 +1778,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	psprite->maxwidth = LittleLong (pin->width);
 	psprite->maxheight = LittleLong (pin->height);
 	psprite->beamlength = LittleFloat (pin->beamlength);
-	mod->synctype = LittleLong (pin->synctype);
+	mod->synctype = (synctype_t) LittleLong (pin->synctype);
 	psprite->numframes = numframes;
 
 	mod->mins[0] = mod->mins[1] = -psprite->maxwidth/2;
@@ -1801,7 +1800,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	{
 		spriteframetype_t	frametype;
 
-		frametype = LittleLong (pframetype->type);
+		frametype = (spriteframetype_t) LittleLong (pframetype->type);
 		psprite->frames[i].type = frametype;
 
 		if (frametype == SPR_SINGLE)

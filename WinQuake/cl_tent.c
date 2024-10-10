@@ -198,6 +198,9 @@ void CL_ParseTEnt (void)
 		R_ParticleExplosion (pos);
 		dl = CL_AllocDlight (0);
 		VectorCopy (pos, dl->origin);
+		dl->color[0] = DLIGHT_COLOR(255);
+		dl->color[1] = DLIGHT_COLOR(153);
+		dl->color[2] = DLIGHT_COLOR(153);
 		dl->radius = 350;
 		dl->die = cl.time + 500;
 		dl->decay = 300;
@@ -254,6 +257,9 @@ void CL_ParseTEnt (void)
 		R_ParticleExplosion2 (pos, colorStart, colorLength);
 		dl = CL_AllocDlight (0);
 		VectorCopy (pos, dl->origin);
+		dl->color[0] = DLIGHT_COLOR(255);
+		dl->color[1] = DLIGHT_COLOR(153);
+		dl->color[2] = DLIGHT_COLOR(153);
 		dl->radius = 350;
 		dl->die = cl.time + 500;
 		dl->decay = 300;
@@ -281,6 +287,9 @@ void CL_ParseTEnt (void)
 		R_ParticleExplosion (endpos);
 		dl = CL_AllocDlight (-1);
 		VectorCopy (endpos, dl->origin);
+		dl->color[0] = DLIGHT_COLOR(153);
+		dl->color[1] = DLIGHT_COLOR(230);
+		dl->color[2] = DLIGHT_COLOR(255);
 		dl->radius = 350;
 		dl->die = cl.time + 500;
 		dl->decay = 300;
