@@ -45,24 +45,36 @@ void IN_Shutdown(void)
 {
 }
 
-
 #include <psxgte.h>
 #include <inline_c.h>
 
-volatile int psx_in_r = 0;
-volatile int psx_in_l = 0;
+int psx_in_r = 0;
+int psx_in_l = 0;
+
+#define EMIT_IF_CHANGED(psxkey, qkey) \
+    if (changed & psxkey) { \
+        Key_Event (qkey, !(pad->btn & psxkey)); \
+    }
 
 void IN_Commands(void)
 {
+    static uint16_t prev_btn = UINT16_MAX;
     PADTYPE * pad = (PADTYPE *)padbuf[0];
 
     if (pad->stat == 0) {
         if ((pad->type == PAD_ID_DIGITAL) || (pad->type == PAD_ID_ANALOG_STICK) || (pad->type == PAD_ID_ANALOG)) {
+            if (pad->btn == prev_btn) {
+                return;
+            }
+            uint16_t changed = ~(prev_btn & pad->btn);
+
             if (!(pad->btn & PAD_R1)) {
-                psx_in_r += 256;
+                psx_in_r += 8;
+                gte_SetGeomScreen(psx_in_r);
             }
             if (!(pad->btn & PAD_R2)) {
-                psx_in_r -= 256;
+                psx_in_r -= 8;
+                gte_SetGeomScreen(psx_in_r);
             }
             if (!(pad->btn & PAD_L1)) {
                 psx_in_l += 256;
@@ -70,16 +82,20 @@ void IN_Commands(void)
             if (!(pad->btn & PAD_L2)) {
                 psx_in_l -= 256;
             }
-            Key_Event (K_UPARROW, !(pad->btn & PAD_UP));
-            Key_Event (K_DOWNARROW, !(pad->btn & PAD_DOWN));
-            Key_Event (K_LEFTARROW, !(pad->btn & PAD_LEFT));
-            Key_Event (K_RIGHTARROW, !(pad->btn & PAD_RIGHT));
-            Key_Event (K_ENTER, !(pad->btn & PAD_CROSS));
-            Key_Event (K_MOUSE1, !(pad->btn & PAD_CIRCLE));
-            Key_Event (K_MOUSE2, !(pad->btn & PAD_SQUARE));
-            Key_Event (K_MOUSE3, !(pad->btn & PAD_TRIANGLE));
 
-            Key_Event (K_ESCAPE, !(pad->btn & PAD_START));
+            EMIT_IF_CHANGED(PAD_START, K_ESCAPE);
+
+            EMIT_IF_CHANGED(PAD_CROSS, K_ENTER);
+            EMIT_IF_CHANGED(PAD_CIRCLE, K_MOUSE1);
+            EMIT_IF_CHANGED(PAD_SQUARE, K_MOUSE2);
+            EMIT_IF_CHANGED(PAD_TRIANGLE, K_MOUSE3);
+
+            EMIT_IF_CHANGED(PAD_UP, K_UPARROW);
+            EMIT_IF_CHANGED(PAD_DOWN, K_DOWNARROW);
+            EMIT_IF_CHANGED(PAD_LEFT, K_LEFTARROW);
+            EMIT_IF_CHANGED(PAD_RIGHT, K_RIGHTARROW);
+
+            prev_btn = pad->btn;
         }
     }
 }

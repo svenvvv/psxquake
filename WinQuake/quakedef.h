@@ -341,5 +341,5 @@ void Chase_Init (void);
 void Chase_Reset (void);
 void Chase_Update (void);
 
-extern volatile int psx_in_r;
-extern volatile int psx_in_l;
+extern int psx_in_r;
+extern int psx_in_l;

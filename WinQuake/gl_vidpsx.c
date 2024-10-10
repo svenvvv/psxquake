@@ -223,6 +223,7 @@ void VID_Init(unsigned char *palette)
 
 void Sys_SendKeyEvents(void)
 {
+	IN_Commands();
 }
 
 void Force_CenterView_f (void)
