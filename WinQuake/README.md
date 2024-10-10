@@ -6,7 +6,7 @@ Currently the software renderer is functional, albeit with horrible performance 
 
 The hardware renderer can draw menus (at 60 fps!) and even the in-game world at a glorious 3 FPS.
 
-![First not-completely-broken HW-rendered screenshot](images/first_hw_bsp.jpg)
+![Screenshot](images/20241010.jpg)
 
 No sound, saving, etc.
 
