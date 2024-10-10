@@ -33,7 +33,7 @@ int			skytexturenum;
 #define	GL_RGBA4	0
 #endif
 
-void EmitWaterPolys (msurface_t *fa);
+void EmitWaterPolys (msurface_t *fa, int texturenum);
 void EmitSkyPolys (msurface_t *fa);
 void EmitBothSkyLayers (msurface_t *fa);
 void R_DrawSkyChain (msurface_t *fa);
@@ -41,6 +41,12 @@ qboolean R_CullBox (vec3_t mins, vec3_t maxs);
 void R_MarkLights (dlight_t *light, int bit, mnode_t *node);
 void R_StoreEfrags (efrag_t **ppefrag);
 void R_RotateForEntity (entity_t *e);
+
+
+static inline void loadVerts(SVECTOR & out, int16_t const verts[3])
+{
+	out = { verts[0], verts[1], verts[2] };
+}
 
 
 // int		lightmap_bytes;		// 1, 2, or 4
@@ -289,7 +295,7 @@ extern	int		solidskytexture;
 extern	int		alphaskytexture;
 extern	float	speedscale;		// for top sky and bottom sky
 
-void DrawGLWaterPoly (glpoly_t *p);
+void DrawGLWaterPoly (glpoly_t const * p, int texturenum, mplane_t const * plane);
 void DrawGLWaterPolyLightmap (glpoly_t *p);
 
 lpMTexFUNC qglMTexCoord2fSGIS = NULL;
@@ -563,9 +569,9 @@ void R_DrawSequentialPoly (msurface_t *s)
 
 	if (s->flags & SURF_DRAWTURB)
 	{
-		GL_DisableMultitexture();
-		GL_Bind (s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys (s);
+		// GL_DisableMultitexture();
+		// GL_Bind (s->texinfo->texture->gl_texturenum);
+		EmitWaterPolys (s, s->texinfo->texture->gl_texturenum);
 		return;
 	}
 
@@ -638,7 +644,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 
 		t = R_TextureAnimation (s->texinfo->texture);
 		GL_Bind (t->gl_texturenum);
-		DrawGLWaterPoly (p);
+		DrawGLWaterPoly (s->polys, t->gl_texturenum, s->plane);
 
 		// GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		// glEnable (GL_BLEND);
@@ -656,14 +662,37 @@ DrawGLWaterPoly
 Warp the vertex coordinates
 ================
 */
-void DrawGLWaterPoly (glpoly_t *p)
+void DrawGLWaterPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 {
-	int		i;
-	float	*v;
-	float	s, t, os, ot;
-	vec3_t	nv;
+	SVECTOR verts[3];
+	uint8_t uv[3 * 2];
+	// CVECTOR color = { uint8_t(rand()), uint8_t(rand()), uint8_t(rand()) };
+	CVECTOR color = { 128, 128, 0 };
+	SVECTOR normal = {
+		int16_t(plane->normal[0] > 0 ? ONE : 0),
+		int16_t(plane->normal[1] > 0 ? ONE : 0),
+		int16_t(plane->normal[2] > 0 ? ONE : 0),
+		int16_t(0)
+	};
 
-	// TODO PSX
+	struct vram_texture * tex = psx_vram_get(texturenum);
+
+	loadVerts(verts[0], p->verts[0]);
+	loadVerts(verts[1], p->verts[1]);
+
+	// TODO PSX warp coords
+	for (int off = 2; p->numverts > off; off += 1) {
+		loadVerts(verts[2], p->verts[off]);
+		draw_tri_tex(verts, uv, tex);
+		// draw_tri(verts, &color);
+		verts[1] = verts[2];
+	}
+
+	// int		i;
+	// float	*v;
+	// float	s, t, os, ot;
+	// vec3_t	nv;
+
 	// GL_DisableMultitexture();
 
 	// glBegin (GL_TRIANGLE_FAN);
@@ -711,18 +740,6 @@ void DrawGLWaterPolyLightmap (glpoly_t *p)
 DrawGLPoly
 ================
 */
-void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
-void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
-				   struct vram_texture const * tex);
-void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
-int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
-				  uint8_t const uv[4 * 2], struct vram_texture const * tex);
-
-static inline void loadVerts(SVECTOR & out, int16_t const verts[3])
-{
-	out = { verts[0], verts[1], verts[2] };
-}
-
 void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 {
 	SVECTOR verts[4];
@@ -932,7 +949,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 
 	if (fa->flags & SURF_DRAWTURB)
 	{	// warp texture, no lightmaps
-		EmitWaterPolys (fa);
+		EmitWaterPolys (fa, t->gl_texturenum);
 		return;
 	}
 
@@ -942,7 +959,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 	// }
 
 	if (fa->flags & SURF_UNDERWATER)
-		DrawGLWaterPoly (fa->polys);
+		DrawGLWaterPoly (fa->polys, t->gl_texturenum, fa->plane);
 	else
 		DrawGLPoly (fa->polys, t->gl_texturenum, fa->plane);
 
@@ -1143,8 +1160,8 @@ void R_DrawWaterSurfaces (void)
 			return;
 
 		for ( s = waterchain ; s ; s=s->texturechain) {
-			GL_Bind (s->texinfo->texture->gl_texturenum);
-			EmitWaterPolys (s);
+			// GL_Bind (s->texinfo->texture->gl_texturenum);
+			EmitWaterPolys (s, s->texinfo->texture->gl_texturenum);
 		}
 		
 		waterchain = NULL;
@@ -1163,10 +1180,10 @@ void R_DrawWaterSurfaces (void)
 
 			// set modulate mode explicitly
 			
-			GL_Bind (t->gl_texturenum);
+			// GL_Bind (t->gl_texturenum);
 
 			for ( ; s ; s=s->texturechain)
-				EmitWaterPolys (s);
+				EmitWaterPolys (s, t->gl_texturenum);
 			
 			t->texturechain = NULL;
 		}

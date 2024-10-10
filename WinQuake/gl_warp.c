@@ -120,7 +120,7 @@ void SubdividePolygon (int numverts, float *verts)
 		return;
 	}
 
-	poly = Hunk_Alloc (sizeof(glpoly_t) + (numverts-4) * VERTEXSIZE*sizeof(float));
+	poly = (glpoly_t*) Hunk_Alloc (sizeof(glpoly_t) + (numverts-4) * VERTEXSIZE*sizeof(float));
 	poly->next = warpface->polys;
 	warpface->polys = poly;
 	poly->numverts = numverts;
@@ -191,12 +191,33 @@ EmitWaterPolys
 Does a water warp on the pre-fragmented glpoly_t chain
 =============
 */
-void EmitWaterPolys (msurface_t *fa)
+void EmitWaterPolys (msurface_t *fa, int texturenum)
 {
-	glpoly_t	*p;
-	float		*v;
-	int			i;
-	float		s, t, os, ot;
+	SVECTOR verts[3];
+	uint8_t uv[3 * 2];
+	CVECTOR color = { 128, 128, 0 };
+
+	struct vram_texture * tex = psx_vram_get(texturenum);
+
+	for (glpoly_t const * p=fa->polys ; p ; p=p->next) {
+		int16_t const * v = p->verts[0];
+		int z[3];
+
+		verts[0] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
+		verts[1] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
+
+		// TODO PSX warp coords
+		for (int off = 2; p->numverts > off; off += 1) {
+			verts[2] = { p->verts[off][0], p->verts[off][1], p->verts[off][2] };
+			draw_tri_tex(verts, uv, tex);
+			// draw_tri(verts, &color);
+			verts[1] = verts[2];
+		}
+	}
+	// glpoly_t	*p;
+	// float		*v;
+	// int			i;
+	// float		s, t, os, ot;
 
 	// TODO PSX
 
@@ -229,14 +250,35 @@ void EmitWaterPolys (msurface_t *fa)
 EmitSkyPolys
 =============
 */
-void EmitSkyPolys (msurface_t *fa)
+void EmitSkyPolys (msurface_t *fa, int texturenum)
 {
-	glpoly_t	*p;
-	float		*v;
-	int			i;
-	float	s, t;
-	vec3_t	dir;
-	float	length;
+	SVECTOR verts[3];
+	uint8_t uv[3 * 2];
+	CVECTOR color = { 128, 128, 0 };
+
+	struct vram_texture * tex = psx_vram_get(texturenum);
+
+	for (glpoly_t const * p=fa->polys ; p ; p=p->next) {
+		int16_t const * v = p->verts[0];
+
+		verts[0] = { p->verts[0][0], p->verts[0][1], p->verts[0][2] };
+		verts[1] = { p->verts[1][0], p->verts[1][1], p->verts[1][2] };
+
+		// TODO PSX warp coords
+		for (int off = 2; p->numverts > off; off += 1) {
+			verts[2] = { p->verts[off][0], p->verts[off][1], p->verts[off][2] };
+			draw_tri_tex(verts, uv, tex);
+			// draw_tri(verts, &color);
+			verts[1] = verts[2];
+		}
+	}
+
+	// glpoly_t	*p;
+	// float		*v;
+	// int			i;
+	// float	s, t;
+	// vec3_t	dir;
+	// float	length;
 
 	// TODO PSX
 
@@ -286,14 +328,14 @@ void EmitBothSkyLayers (msurface_t *fa)
 	speedscale = realtime*8;
 	speedscale -= (int)speedscale & ~127 ;
 
-	EmitSkyPolys (fa);
+	EmitSkyPolys (fa, solidskytexture);
 
 	glEnable (GL_BLEND);
 	GL_Bind (alphaskytexture);
 	speedscale = realtime*16;
 	speedscale -= (int)speedscale & ~127 ;
 
-	EmitSkyPolys (fa);
+	EmitSkyPolys (fa, alphaskytexture);
 
 	glDisable (GL_BLEND);
 }
@@ -316,7 +358,7 @@ void R_DrawSkyChain (msurface_t *s)
 	speedscale -= (int)speedscale & ~127 ;
 
 	for (fa=s ; fa ; fa=fa->texturechain)
-		EmitSkyPolys (fa);
+		EmitSkyPolys (fa, solidskytexture);
 
 	glEnable (GL_BLEND);
 	GL_Bind (alphaskytexture);
@@ -324,7 +366,7 @@ void R_DrawSkyChain (msurface_t *s)
 	speedscale -= (int)speedscale & ~127 ;
 
 	for (fa=s ; fa ; fa=fa->texturechain)
-		EmitSkyPolys (fa);
+		EmitSkyPolys (fa, alphaskytexture);
 
 	glDisable (GL_BLEND);
 }

@@ -343,3 +343,10 @@ void Chase_Update (void);
 
 extern int psx_in_r;
 extern int psx_in_l;
+
+void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
+void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
+				   struct vram_texture const * tex);
+void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
+int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
+				  uint8_t const uv[4 * 2], struct vram_texture const * tex);
