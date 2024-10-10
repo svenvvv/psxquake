@@ -88,6 +88,7 @@ static void psx_rb_init(struct PQRenderBuf * buf)
     buf->draw.dtd = 1;
 
     ClearOTagR(buf->ot, ARRAY_SIZE(buf->ot));
+    ClearOTagR(buf->menu_ot, ARRAY_SIZE(buf->menu_ot));
 
     // Put env's to build the cached packets (at least for drawenv)
     PqCalcDispEnv(&buf->disp, &buf->disp_cache);
@@ -125,7 +126,7 @@ void psx_rb_present(void)
     }
 
     if (psx_zlevel >= OT_LEN) {
-        Sys_Error("psx_zlevel out of bounds\n");
+        Sys_Error("psx_zlevel out of bounds, %d\n", psx_zlevel);
     }
 
     DrawSync(0);
@@ -138,6 +139,7 @@ void psx_rb_present(void)
     psx_zlevel = 0;
 
     ClearOTagR(cur_rb->ot, OT_LEN);
+    ClearOTagR(cur_rb->menu_ot, OT_LEN);
 
     // PutDrawEnv(&cur_rb->draw);
     DrawOTag((const uint32_t *) &cur_rb->draw.dr_env);
@@ -146,4 +148,5 @@ void psx_rb_present(void)
     SetDispMask(1);
 
     DrawOTag(rb[1-psx_db].ot + (OT_LEN - 1));
+    DrawOTag(rb[1-psx_db].menu_ot + (MENU_OT_LEN - 1));
 }

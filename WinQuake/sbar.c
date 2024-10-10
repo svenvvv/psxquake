@@ -928,8 +928,8 @@ void Sbar_Draw (void)
 	if (scr_con_current == vid.height)
 		return;		// console is full screen
 
-	if (sb_updates >= vid.numpages)
-		return;
+	//if (sb_updates >= vid.numpages)
+	//	return;
 
 	scr_copyeverything = 1;
 

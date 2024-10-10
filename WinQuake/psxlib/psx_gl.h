@@ -19,6 +19,7 @@
 #define VRAM_PAGES (((VRAM_WIDTH / VRAM_PAGE_WIDTH) * (VRAM_HEIGHT / VRAM_PAGE_HEIGHT)) - 4)
 
 #define OT_LEN 		(1 * 1024)
+#define MENU_OT_LEN (128)
 #define PRIBUF_LEN 	(128 * 1024)
 
 typedef struct DISPENV_CACHE_S
@@ -35,6 +36,7 @@ struct PQRenderBuf
 	DISPENV_CACHE disp_cache;
 	DRAWENV draw;
 	uint32_t ot[OT_LEN];
+	uint32_t menu_ot[MENU_OT_LEN];
 	uint8_t pribuf[PRIBUF_LEN];
 };
 
@@ -115,6 +117,18 @@ static inline void psx_add_prim(T * prim, int z)
 	}
 
 	addPrim(rb[psx_db].ot + (OT_LEN - z - 1), prim);
+	rb_nextpri = (uint8_t *) ++prim;
+}
+
+template <typename T>
+static inline void menu_add_prim_z(T * prim, int z)
+{
+    extern int pricount;
+    extern struct PQRenderBuf rb[2];
+
+	pricount += 1;
+
+	addPrim(rb[psx_db].menu_ot + (MENU_OT_LEN - z - 1), prim);
 	rb_nextpri = (uint8_t *) ++prim;
 }
 
