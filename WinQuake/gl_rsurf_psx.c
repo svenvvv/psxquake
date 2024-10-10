@@ -785,21 +785,32 @@ void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 		// win.h = 0;
 		// setTexWindow(twin, &win);
 		// psx_add_prim_z(twin, gv_min);
-	} else if (p->numverts % 3 == 0) {
-		for (int off = 0; (p->numverts - off) > 0; off += 3) {
-			loadVerts(verts[2], p->verts[off + 0]);
-			uv[4] = p->verts[off + 0][3];
-			uv[5] = p->verts[off + 0][4];
+	// } else if (p->numverts % 3 == 999) {
+	// 	for (int off = 3; (p->numverts - off) > 0; off += 3) {
+	// 		printf("TRI %d %d\n", p->numverts, off);
+	// 		loadVerts(verts[0], p->verts[off + 0]);
+	// 		uv[4] = p->verts[off + 0][3];
+	// 		uv[5] = p->verts[off + 0][4];
+ //
+	// 		loadVerts(verts[1], p->verts[off + 1]);
+	// 		uv[2] = p->verts[off + 1][3];
+	// 		uv[3] = p->verts[off + 1][4];
+ //
+	// 		loadVerts(verts[2], p->verts[off + 2]);
+	// 		uv[0] = p->verts[off + 2][3];
+	// 		uv[1] = p->verts[off + 2][4];
+ //
+	// 		draw_tri_tex(verts, uv, tex);
+	// 	}
+	} else {
+		loadVerts(verts[0], p->verts[0]);
+		loadVerts(verts[1], p->verts[1]);
 
-			loadVerts(verts[1], p->verts[off + 1]);
-			uv[2] = p->verts[off + 1][3];
-			uv[3] = p->verts[off + 1][4];
-
-			loadVerts(verts[0], p->verts[off + 2]);
-			uv[0] = p->verts[off + 2][3];
-			uv[1] = p->verts[off + 2][4];
-
+		for (int off = 2; p->numverts > off; off += 1) {
+			loadVerts(verts[2], p->verts[off]);
 			draw_tri_tex(verts, uv, tex);
+			// draw_tri(verts, &color);
+			verts[1] = verts[2];
 		}
 	}
 
@@ -924,6 +935,11 @@ void R_RenderBrushPoly (msurface_t *fa)
 		EmitWaterPolys (fa);
 		return;
 	}
+
+	// printf("Draw surf extents %d %d\n", fa->extents[0], fa->extents[1]);
+	// if (fa->extents[0] < 80 && fa->extents[1] < 80) {
+	// 	return;
+	// }
 
 	if (fa->flags & SURF_UNDERWATER)
 		DrawGLWaterPoly (fa->polys);

@@ -489,12 +489,17 @@ void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
 
 	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
 
-	unsigned uv_tx = tex->rect.x * 2;
-	unsigned uv_ty = tex->rect.y;
+	// unsigned uv_tx = tex->rect.x * 2;
+	// unsigned uv_ty = tex->rect.y;
+	// setUV3(poly,
+	// 	uv_tx + uv[0], uv_ty + uv[1],
+	// 	uv_tx + uv[2], uv_ty + uv[3],
+	// 	uv_tx + uv[4], uv_ty + uv[5]
+	// );
 	setUV3(poly,
-		uv_tx + uv[0], uv_ty + uv[1],
-		uv_tx + uv[2], uv_ty + uv[3],
-		uv_tx + uv[4], uv_ty + uv[5]
+		tex->rect.x * 2, tex->rect.y,
+		tex->rect.x * 2 + tex->rect.w, tex->rect.y,
+		tex->rect.x * 2, tex->rect.y + tex->rect.h
 	);
 	poly->tpage = tex->tpage;
 	poly->clut = psx_clut;
