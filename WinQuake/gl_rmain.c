@@ -1065,6 +1065,9 @@ void R_SetupGL (void)
 			color_mtx.m[0][lnum] = 0;
 			color_mtx.m[0][lnum] = 0;
 			color_mtx.m[0][lnum] = 0;
+			light_mtx.m[lnum][0] = 0;
+			light_mtx.m[lnum][1] = 0;
+			light_mtx.m[lnum][2] = 0;
 		}
 	}
 
@@ -1072,9 +1075,9 @@ void R_SetupGL (void)
 	light_mtx.m[2][0] = ONE / 2;
 	light_mtx.m[2][1] = ONE / 2;
 	light_mtx.m[2][2] = ONE;
-	color_mtx.m[0][2] = DLIGHT_COLOR(255) / 2;
-	color_mtx.m[1][2] = DLIGHT_COLOR(242) / 2;
-	color_mtx.m[2][2] = DLIGHT_COLOR(230) / 2;
+	color_mtx.m[0][2] = DLIGHT_COLOR(255);
+	color_mtx.m[1][2] = DLIGHT_COLOR(242);
+	color_mtx.m[2][2] = DLIGHT_COLOR(230);
 
 	gte_SetRotMatrix(&r_world_matrix);
 	gte_SetTransMatrix(&r_world_matrix);
