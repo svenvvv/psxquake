@@ -141,7 +141,13 @@ void GL_Init (void)
 
 	gte_SetGeomOffset(VID_WIDTH >> 1, VID_HEIGHT >> 1);
 	gte_SetGeomScreen(VID_WIDTH >> 1);
+
+#ifdef DEBUG
 	gte_SetBackColor(63, 63, 63);
+#else
+	gte_SetBackColor(0, 0, 0);
+#endif
+
 	gte_SetColorMatrix(&color_mtx);
 
 	// SetDispMask(1);

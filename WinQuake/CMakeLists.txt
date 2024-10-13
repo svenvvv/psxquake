@@ -105,6 +105,7 @@ set(GL_SRC
 	psxlib/crc32.c
 	psxlib/gl.c
 	psxlib/psx_gl.c
+	psxlib/psx_prim.c
 	psxlib/psx_gl_vram.c
 	# psxlib/psx_softfp.c
 	sys_psx.c

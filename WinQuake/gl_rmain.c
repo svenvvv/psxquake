@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <psxgpu.h>
 #include <psxgte.h>
 #include <inline_c.h>
+#include <limits.h>
 
 entity_t	r_worldentity;
 
@@ -339,226 +340,6 @@ float	r_avertexnormal_dots[SHADEDOT_QUANT][256] =
 float	*shadedots = r_avertexnormal_dots[0];
 
 int	lastposenum;
-
-int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
-				  uint8_t const uv[4 * 2], struct vram_texture const * tex)
-{
-	int gv;
-	POLY_FT4 * poly = (POLY_FT4 *) rb_nextpri;
-
-	gte_ldv3(&verts[0], &verts[1], &verts[2]);
-
-	gte_rtpt();
-	gte_nclip();
-	gte_stopz(&gv);
-	if (gv > 0) {
-		return -1;
-	}
-
-	setPolyFT4(poly);
-
-	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
-
-	gte_ldv0(&verts[3]);
-	gte_rtps();
-
-	gte_avsz4();
-	gte_stotz(&gv);
-	if ((gv >> 2) > OT_LEN) {
-		return -1;
-	}
-
-	gte_stsxy(&poly->x3);
-
-	gte_ldrgb(&poly->r0);
-	gte_ldv0(&normal);
-	gte_ncs();
-	gte_strgb(&poly->r0);
-
-	// uint8_t const ambient[] = { 255, 242, 230 };
-	// setRGB0(poly, 255, 242, 230);
-
-	setUVWH(poly,
-		tex->rect.x * 2,
-		tex->rect.y,
-		tex->rect.w,
-		tex->rect.h
-	);
-	// int ux = 0; // tex->rect.x * 2;
-	// int uy = 0; // tex->rect.y;
-	// setUV4(poly,
-	// 	ux + uv[0], uy + uv[1],
-	// 	ux + uv[2], uy + uv[3],
-	// 	ux + uv[4], uy + uv[5],
-	// 	ux + uv[6], uy + uv[7]
-	// );
-	// printf("uv\n");
-	// printf(" %6d %6d\n", uv[0], uv[1]);
-	// printf(" %6d %6d\n", uv[2], uv[3]);
-	// printf(" %6d %6d\n", uv[4], uv[5]);
-	// printf(" %6d %6d\n", uv[6], uv[7]);
-	poly->tpage = tex->tpage;
-	poly->clut = psx_clut;
-
-	// setRGB0(poly, 127, 127, 127);
-
-	// printf("tri %d %d %d => %d %d %d\n",
-	// 	  a->v[0], verts->v[1], verts->v[2],
-	// 	   poly->x0, poly->x1, poly->x2);
-
-	psx_add_prim_z(poly, gv >> 2);
-
-	return gv >> 2;
-}
-
-void draw_quad(SVECTOR const verts[4], CVECTOR const * color)
-{
-	int gv;
-	// POLY_F4 * poly = (POLY_F4 *) rb_nextpri;
-	LINE_F4 * poly = (LINE_F4 *) rb_nextpri;
-
-	gte_ldv3(&verts[0], &verts[1], &verts[2]);
-
-	gte_rtpt();
-	gte_nclip();
-	gte_stopz(&gv);
-	if (gv < 0) {
-		return;
-	}
-
-	// setPolyF4(poly);
-	setLineF4(poly);
-
-	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
-
-	gte_ldv0(&verts[3]);
-	gte_rtps();
-
-	gte_avsz4();
-	gte_stotz(&gv);
-	if ((gv >> 2) > OT_LEN) {
-		return;
-	}
-
-	gte_stsxy(&poly->x3);
-
-	setRGB0(poly, color->r, color->g, color->b);
-
-	// SVECTOR norm = 	{ 0, -ONE, 0, 0 };
-
-	// gte_ldrgb(&(poly->r0));
-	// gte_ldv0(&norm);
-	// gte_ncs();
-	// gte_strgb(&(poly->r0));
-
-	// printf("tri %d %d %d => %d %d %d\n",
-	// 	  a->v[0], verts->v[1], verts->v[2],
-	// 	   poly->x0, poly->x1, poly->x2);
-
-	psx_add_prim_z(poly, gv >> 2);
-}
-
-template <typename T>
-T * psx_nextpri()
-{
-	return (T*)rb_nextpri;
-}
-
-void draw_tri_tex(SVECTOR const verts[3], uint8_t const uv[3 * 2],
-				  struct vram_texture const * tex)
-{
-	int gv;
-	auto * poly = psx_nextpri<POLY_FT3>();
-
-	gte_ldv3(&verts[0], &verts[1], &verts[2]);
-
-	gte_rtpt();
-	gte_nclip();
-	gte_stopz(&gv);
-	if (gv < 0) {
-		return;
-	}
-
-	gte_avsz3();
-	gte_stotz(&gv);
-	if ((gv >> 2) > OT_LEN) {
-		return;
-	}
-
-	setPolyFT3(poly);
-
-	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
-
-	// unsigned uv_tx = tex->rect.x * 2;
-	// unsigned uv_ty = tex->rect.y;
-	// setUV3(poly,
-	// 	uv_tx + uv[0], uv_ty + uv[1],
-	// 	uv_tx + uv[2], uv_ty + uv[3],
-	// 	uv_tx + uv[4], uv_ty + uv[5]
-	// );
-	setUV3(poly,
-		tex->rect.x * 2, tex->rect.y,
-		tex->rect.x * 2 + tex->rect.w, tex->rect.y,
-		tex->rect.x * 2, tex->rect.y + tex->rect.h
-	);
-	poly->tpage = tex->tpage;
-	poly->clut = psx_clut;
-
-	setRGB0(poly, 127, 127, 127);
-
-	// SVECTOR norm = 	{ 0, -ONE, 0, 0 };
-
-	// gte_ldrgb(&(poly->r0));
-	// gte_ldv0(&norm);
-	// gte_ncs();
-	// gte_strgb(&(poly->r0));
-
-	// printf("tri %d %d %d => %d %d %d\n",
-	// 	  a->v[0], verts->v[1], verts->v[2],
-	// 	   poly->x0, poly->x1, poly->x2);
-
-	psx_add_prim_z(poly, gv >> 2);
-}
-
-void draw_tri(SVECTOR const verts[3], CVECTOR const * color)
-{
-	int gv;
-	auto * poly = psx_nextpri<LINE_F3>();
-
-	gte_ldv3(&verts[0], &verts[1], &verts[2]);
-
-	gte_rtpt();
-	gte_nclip();
-	gte_stopz(&gv);
-	if (gv < 0) {
-		return;
-	}
-
-	gte_avsz3();
-	gte_stotz(&gv);
-	if ((gv >> 2) > OT_LEN) {
-		return;
-	}
-
-	setLineF3(poly);
-
-	gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
-
-	setRGB0(poly, color->r, color->g, color->b);
-
-	// SVECTOR norm = 	{ 0, -ONE, 0, 0 };
-
-	// gte_ldrgb(&(poly->r0));
-	// gte_ldv0(&norm);
-	// gte_ncs();
-	// gte_strgb(&(poly->r0));
-
-	// printf("tri %d %d %d => %d %d %d\n",
-	// 	  a->v[0], verts->v[1], verts->v[2],
-	// 	   poly->x0, poly->x1, poly->x2);
-
-	psx_add_prim_z(poly, gv >> 2);
-}
 
 SVECTOR byte3_to_svector(uint8_t const byte[3])
 {
@@ -1263,35 +1044,35 @@ void R_SetupGL (void)
 	ApplyMatrixLV(&r_world_matrix, &tpos, &tpos);
 	TransMatrix(&r_world_matrix, &tpos);
 
-	// MATRIX flip = { 0 };
-	// flip.m[0][0] = ONE;
-	// flip.m[1][1] = -ONE;
-	// flip.m[2][2] = ONE;
-	// MulMatrix0(&r_world_matrix, &flip, &r_world_matrix);
+	MATRIX color_mtx;
+	MATRIX light_mtx;
 
-	MATRIX color_mtx = { 0 };
-	MATRIX light_mtx = { 0 };
 	for (int lnum = 0; lnum < MAX_DLIGHTS; ++lnum) {
 		auto & l = cl_dlights[lnum];
 		if (l.die >= cl.time) {
 			// int vect[3];
 			// VectorSubtract (l.origin, r_refdef.vieworg, vect);
 			// printf("dlight %d %d %d\n", lnum, l.radius);
-			light_mtx.m[lnum][0] = (int)l.origin[0];
-			light_mtx.m[lnum][1] = (int)l.origin[1];
-			light_mtx.m[lnum][2] = (int)l.origin[2];
+			light_mtx.m[lnum][0] = (l.origin[0] / l.radius) * ONE;
+			light_mtx.m[lnum][1] = (l.origin[1] / l.radius) * ONE;
+			light_mtx.m[lnum][2] = (l.origin[2] / l.radius) * ONE;
+			// printf("dlight %d %d %d\n", lnum, light_mtx.m[lnum][0], light_mtx.m[lnum][1], light_mtx.m[lnum][2]);
 
 			color_mtx.m[0][lnum] = l.color[0];
 			color_mtx.m[0][lnum] = l.color[1];
 			color_mtx.m[0][lnum] = l.color[2];
+		} else {
+			color_mtx.m[0][lnum] = 0;
+			color_mtx.m[0][lnum] = 0;
+			color_mtx.m[0][lnum] = 0;
 		}
 	}
 
 	// Ambient light
 	light_mtx.m[2][0] = ONE / 2;
 	light_mtx.m[2][1] = ONE / 2;
-	light_mtx.m[2][2] = ONE / 2;
-	color_mtx.m[0][2] = DLIGHT_COLOR(255)/ 2;
+	light_mtx.m[2][2] = ONE;
+	color_mtx.m[0][2] = DLIGHT_COLOR(255) / 2;
 	color_mtx.m[1][2] = DLIGHT_COLOR(242) / 2;
 	color_mtx.m[2][2] = DLIGHT_COLOR(230) / 2;
 

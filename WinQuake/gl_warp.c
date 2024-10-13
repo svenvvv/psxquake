@@ -196,6 +196,7 @@ void EmitWaterPolys (msurface_t *fa, int texturenum)
 	SVECTOR verts[3];
 	uint8_t uv[3 * 2];
 	CVECTOR color = { 128, 128, 0 };
+	SVECTOR normal = normal_from_plane(*fa->plane);
 
 	struct vram_texture * tex = psx_vram_get(texturenum);
 
@@ -209,7 +210,7 @@ void EmitWaterPolys (msurface_t *fa, int texturenum)
 		// TODO PSX warp coords
 		for (int off = 2; p->numverts > off; off += 1) {
 			verts[2] = { p->verts[off][0], p->verts[off][1], p->verts[off][2] };
-			draw_tri_tex(verts, uv, tex);
+			draw_tri_tex(verts, normal, uv, tex);
 			// draw_tri(verts, &color);
 			verts[1] = verts[2];
 		}
@@ -255,6 +256,7 @@ void EmitSkyPolys (msurface_t *fa, int texturenum)
 	SVECTOR verts[3];
 	uint8_t uv[3 * 2];
 	CVECTOR color = { 128, 128, 0 };
+	SVECTOR normal = normal_from_plane(*fa->plane);
 
 	struct vram_texture * tex = psx_vram_get(texturenum);
 
@@ -267,7 +269,7 @@ void EmitSkyPolys (msurface_t *fa, int texturenum)
 		// TODO PSX warp coords
 		for (int off = 2; p->numverts > off; off += 1) {
 			verts[2] = { p->verts[off][0], p->verts[off][1], p->verts[off][2] };
-			draw_tri_tex(verts, uv, tex);
+			draw_tri_tex(verts, normal, uv, tex);
 			// draw_tri(verts, &color);
 			verts[1] = verts[2];
 		}

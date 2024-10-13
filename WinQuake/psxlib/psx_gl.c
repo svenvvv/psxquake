@@ -78,7 +78,11 @@ static void PqPutDispEnv(DISPENV_CACHE * cache)
 static void psx_rb_init(struct PQRenderBuf * buf)
 {
 #ifdef GLQUAKE
+#   ifdef DEBUG
     setRGB0(&buf->draw, 63, 0, 127);
+#   else
+    setRGB0(&buf->draw, 0, 0, 0);
+#   endif
 #else
     // Set bg to black so we don't have to loop through each pixel of each frame replacing black
     // pixels (transparent) with dark red.

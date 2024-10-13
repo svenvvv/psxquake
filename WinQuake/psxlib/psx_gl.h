@@ -20,7 +20,12 @@
 
 #define OT_LEN 		(1 * 1024)
 #define MENU_OT_LEN (128)
-#define PRIBUF_LEN 	(128 * 1024)
+#define PRIBUF_LEN 	(180 * 1024)
+
+struct vram_texture;
+
+#include <psxgte.h>
+#include <psxgpu.h>
 
 typedef struct DISPENV_CACHE_S
 {
@@ -169,3 +174,27 @@ static inline uint32_t psx_rgb24(uint8_t r, uint8_t g, uint8_t b)
 
     return ret;
 }
+
+template <typename T>
+T * psx_nextpri()
+{
+	return (T*)rb_nextpri;
+}
+
+static constexpr size_t PSX_SCRATCH_SIZE = 1024;
+static uint8_t * psx_scratch = (uint8_t*) 0x1F800000;
+
+void draw_quad_tex_subdiv(SVECTOR const verts[4], SVECTOR const & normal,
+						  uint8_t const uv[4 * 2], struct vram_texture const * tex,
+						  int subdiv);
+
+void draw_tri_tex_subdiv(SVECTOR const verts[3], SVECTOR const & normal,
+						 uint8_t const uv[3 * 2], struct vram_texture const * tex,
+						 int subdiv);
+
+void draw_tri(SVECTOR const verts[3], CVECTOR const * color);
+void draw_tri_tex(SVECTOR const verts[3], SVECTOR const & normal,
+				  uint8_t const uv[3 * 2], struct vram_texture const * tex);
+void draw_quad(SVECTOR const verts[4], CVECTOR const * color);
+int draw_quad_tex(SVECTOR const verts[4], SVECTOR const & normal,
+				  uint8_t const uv[4 * 2], struct vram_texture const * tex);

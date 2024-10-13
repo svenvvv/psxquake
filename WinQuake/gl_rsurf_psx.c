@@ -666,14 +666,8 @@ void DrawGLWaterPoly (glpoly_t const * p, int texturenum, mplane_t const * plane
 {
 	SVECTOR verts[3];
 	uint8_t uv[3 * 2];
-	// CVECTOR color = { uint8_t(rand()), uint8_t(rand()), uint8_t(rand()) };
 	CVECTOR color = { 128, 128, 0 };
-	SVECTOR normal = {
-		int16_t(plane->normal[0] > 0 ? ONE : 0),
-		int16_t(plane->normal[1] > 0 ? ONE : 0),
-		int16_t(plane->normal[2] > 0 ? ONE : 0),
-		int16_t(0)
-	};
+	SVECTOR normal = normal_from_plane(*plane);
 
 	struct vram_texture * tex = psx_vram_get(texturenum);
 
@@ -683,7 +677,7 @@ void DrawGLWaterPoly (glpoly_t const * p, int texturenum, mplane_t const * plane
 	// TODO PSX warp coords
 	for (int off = 2; p->numverts > off; off += 1) {
 		loadVerts(verts[2], p->verts[off]);
-		draw_tri_tex(verts, uv, tex);
+		draw_tri_tex(verts, normal, uv, tex);
 		// draw_tri(verts, &color);
 		verts[1] = verts[2];
 	}
@@ -735,12 +729,13 @@ void DrawGLWaterPolyLightmap (glpoly_t *p)
 	// glEnd ();
 }
 
+
 /*
 ================
 DrawGLPoly
 ================
 */
-void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
+void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane, int subdiv)
 {
 	SVECTOR verts[4];
 	uint8_t uv[4 * 2];
@@ -784,7 +779,9 @@ void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 			loadVerts(verts[1], p->verts[off + 3]);
 			uv[2] = p->verts[off + 3][3];
 			uv[3] = p->verts[off + 3][4];
-			gv = draw_quad_tex(verts, normal, uv, tex);
+			// gv = draw_quad_tex(verts, normal, uv, tex);
+
+			draw_quad_tex_subdiv(verts, normal, uv, tex, subdiv);
 			if (gv > 0) {
 				if (gv > gv_max) {
 					gv_max = gv;
@@ -802,43 +799,17 @@ void DrawGLPoly (glpoly_t const * p, int texturenum, mplane_t const * plane)
 		// win.h = 0;
 		// setTexWindow(twin, &win);
 		// psx_add_prim_z(twin, gv_min);
-	// } else if (p->numverts % 3 == 999) {
-	// 	for (int off = 3; (p->numverts - off) > 0; off += 3) {
-	// 		printf("TRI %d %d\n", p->numverts, off);
-	// 		loadVerts(verts[0], p->verts[off + 0]);
-	// 		uv[4] = p->verts[off + 0][3];
-	// 		uv[5] = p->verts[off + 0][4];
- //
-	// 		loadVerts(verts[1], p->verts[off + 1]);
-	// 		uv[2] = p->verts[off + 1][3];
-	// 		uv[3] = p->verts[off + 1][4];
- //
-	// 		loadVerts(verts[2], p->verts[off + 2]);
-	// 		uv[0] = p->verts[off + 2][3];
-	// 		uv[1] = p->verts[off + 2][4];
- //
-	// 		draw_tri_tex(verts, uv, tex);
-	// 	}
 	} else {
 		loadVerts(verts[0], p->verts[0]);
 		loadVerts(verts[1], p->verts[1]);
 
 		for (int off = 2; p->numverts > off; off += 1) {
 			loadVerts(verts[2], p->verts[off]);
-			draw_tri_tex(verts, uv, tex);
+			draw_tri_tex_subdiv(verts, normal, uv, tex, subdiv);
 			// draw_tri(verts, &color);
 			verts[1] = verts[2];
 		}
 	}
-
-	// glBegin (GL_POLYGON);
-	// v = p->verts[0];
-	// for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
-	// {
-	// 	glTexCoord2f (v[3], v[4]);
-	// 	glVertex3fv (v);
-	// }
-	// glEnd ();
 }
 
 
@@ -953,15 +924,35 @@ void R_RenderBrushPoly (msurface_t *fa)
 		return;
 	}
 
-	// printf("Draw surf extents %d %d\n", fa->extents[0], fa->extents[1]);
-	// if (fa->extents[0] < 80 && fa->extents[1] < 80) {
-	// 	return;
-	// }
-
-	if (fa->flags & SURF_UNDERWATER)
+	if (fa->flags & SURF_UNDERWATER) {
 		DrawGLWaterPoly (fa->polys, t->gl_texturenum, fa->plane);
-	else
-		DrawGLPoly (fa->polys, t->gl_texturenum, fa->plane);
+	} else {
+		int subdiv = 1;
+		// Skip dividing small faces
+		if (fa->extents[0] > 48 || fa->extents[1] > 48) {
+			// Take into account the size of the face, if its very large then divide it more
+			int xof = (fa->extents[0] / 128 + fa->extents[1] / 128) / 2;
+			// Calculate distance from player to center of face
+			int distance[3] = {
+				((int)fa->polys->verts[0][0] + (int)fa->polys->verts[2][0]) / 2,
+				((int)fa->polys->verts[0][1] + (int)fa->polys->verts[2][1]) / 2,
+				((int)fa->polys->verts[0][2] + (int)fa->polys->verts[2][2]) / 2,
+			};
+			distance[0] = (int)r_refdef.vieworg[0] - distance[0];
+			distance[1] = (int)r_refdef.vieworg[1] - distance[1];
+			distance[2] = (int)r_refdef.vieworg[2] - distance[2];
+			// int distance[3] = {
+			// 	(int)r_refdef.vieworg[0] - (int)center[0],
+			// 	(int)r_refdef.vieworg[1] - (int)center[1],
+			// 	(int)r_refdef.vieworg[2] - (int)center[2],
+			// };
+			int l = Length(distance);
+			if (l < 500) {
+				subdiv = ((l - 500) / -167) + 1 + xof;
+			}
+		}
+		DrawGLPoly (fa->polys, t->gl_texturenum, fa->plane, subdiv);
+	}
 
 	// add the poly to the proper lightmap chain
 
@@ -1310,24 +1301,43 @@ void R_DrawBrushModel (entity_t *e)
 
 // calculate dynamic lighting for bmodel if it's not an
 // instanced model
-	if (clmodel->firstmodelsurface != 0 && !gl_flashblend.value)
-	{
-		for (k=0 ; k<MAX_DLIGHTS ; k++)
-		{
-			if ((cl_dlights[k].die < cl.time) ||
-				(!cl_dlights[k].radius))
-				continue;
+	// if (clmodel->firstmodelsurface != 0 && !gl_flashblend.value)
+	// {
+	// 	for (k=0 ; k<MAX_DLIGHTS ; k++)
+	// 	{
+	// 		if ((cl_dlights[k].die < cl.time) ||
+	// 			(!cl_dlights[k].radius))
+	// 			continue;
+ //
+	// 		R_MarkLights (&cl_dlights[k], 1<<k,
+	// 			clmodel->nodes + clmodel->hulls[0].firstclipnode);
+	// 	}
+	// }
 
-			R_MarkLights (&cl_dlights[k], 1<<k,
-				clmodel->nodes + clmodel->hulls[0].firstclipnode);
-		}
-	}
-
-// e->angles[0] = -e->angles[0];	// stupid quake bug
+ // e->angles[0] = -e->angles[0];	// stupid quake bug
     // PushMatrix ();
-	// R_RotateForEntity (e);
-	// gte_SetRotMatrix(&r_base_world_matrix);
-	// gte_SetTransMatrix(&r_base_world_matrix);
+
+	MATRIX ent_mtx;
+	SVECTOR trot = {
+		int16_t(int(e->angles[2]) * 1024 / 90),
+		int16_t(int(e->angles[0]) * 1024 / 90),
+		int16_t(int(e->angles[1]) * 1024 / 90),
+	};
+	RotMatrix(&trot, &ent_mtx);
+
+	VECTOR tpos = {
+		int32_t(e->origin[0]),
+		int32_t(e->origin[1]),
+		int32_t(e->origin[2]),
+	};
+	TransMatrix(&ent_mtx, &tpos);
+
+	CompMatrixLV(&r_world_matrix, &ent_mtx, &ent_mtx);
+
+	gte_SetTransMatrix(&ent_mtx);
+	gte_SetRotMatrix(&ent_mtx);
+
+	//R_RotateForEntity (e);
 
 // e->angles[0] = -e->angles[0];	// stupid quake bug
 
@@ -1345,10 +1355,12 @@ void R_DrawBrushModel (entity_t *e)
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
 			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
-			if (gl_texsort.value)
+			if (gl_texsort.value) {
 				R_RenderBrushPoly (psurf);
-			else
+			} else {
+				printf("DRAW SEQ\n");
 				R_DrawSequentialPoly (psurf);
+			}
 		}
 	}
 
